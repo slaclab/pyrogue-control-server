@@ -102,7 +102,7 @@ class localServer(pyrogue.Root):
             
             # Add data streams (0-7) to file channels (0-7)
             for i in range(8):
-                pyrogue.streamConnect(udpRssiStream.application(i), dataWriter.getChannel(i))
+                pyrogue.streamConnect(udpRssiStream.application(0x80 + i), dataWriter.getChannel(i))
 
             # Add devices     
             self.add(FpgaTopLevel(memBase=rssiSrp))
@@ -112,7 +112,7 @@ class localServer(pyrogue.Root):
             
             @self.command()
             def Trigger():
-                rogue.protocols.srp.Cmd().sendCmd(0,0)
+		#self.FpgaTopLevel.AppTop.DaqMuxV2[0].TriggerDaq.exec()
 
             # Run control
             self.add(pyrogue.RunControl(    name        = 'runControl',
