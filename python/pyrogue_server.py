@@ -112,7 +112,8 @@ class localServer(pyrogue.Root):
             
             @self.command()
             def Trigger():
-		#self.FpgaTopLevel.AppTop.DaqMuxV2[0].TriggerDaq.exec()
+                self.FpgaTopLevel.AppTop.DaqMuxV2[0].TriggerDaq.call()
+                self.FpgaTopLevel.AppTop.DaqMuxV2[1].TriggerDaq.call()
 
             # Run control
             self.add(pyrogue.RunControl(    name        = 'runControl',
