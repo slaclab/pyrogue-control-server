@@ -104,14 +104,10 @@ class localServer(pyrogue.Root):
             # Set global timeout
             self.setTimeout(1.0)
             
-            @self.command()
-            def Trigger():
-                fpga.Trigger()
-
             # Run control
-            self.add(pyrogue.RunControl(    name        = 'runControl',
+            self.add(pyrogue.RunControl(    name        = 'Stream acquisition',
                                             description = 'Run controller',
-                                            cmd         = self.Trigger,
+                                            cmd         = fpga.Trigger,
                                             rates       = {
                                                             1:  '1 Hz', 
                                                             10: '10 Hz', 
