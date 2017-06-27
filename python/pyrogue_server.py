@@ -90,30 +90,23 @@ class localServer(pyrogue.Root):
             dataWriter = pyrogue.utilities.fileio.StreamWriter('dataWriter')
             self.add(dataWriter)
 
-            # Create RSSI interface
-            udpRssiA = pyrogue.protocols.UdpRssiPack(ipAddr,8193,1500)
-
-            # Create data stream interface
-            udpRssiStream = pyrogue.protocols.UdpRssiPack(ipAddr, 8194, 1500)
-
-            # Create and connect SRP to RSSI
-            rssiSrp = rogue.protocols.srp.SrpV3()
-            pyrogue.streamConnectBiDir(rssiSrp,udpRssiA.application(0))
             
-            # Add data streams (0-7) to file channels (0-7)
-            for i in range(8):
-                pyrogue.streamConnect(udpRssiStream.application(0x80 + i), dataWriter.getChannel(i))
+            # Instantiate Fpga top level
+            fpga = FpgaTopLevel(ipAddr=ipAddr)
 
             # Add devices     
-            self.add(FpgaTopLevel(memBase=rssiSrp))
-            
+            self.add(fpga)
+
+            # Add data streams (0-7) to file channels (0-7)
+            for i in range(8):
+               pyrogue.streamConnect(fpga.stream.application(0x80 + i ), dataWriter.getChannel(i))
+               
             # Set global timeout
             self.setTimeout(1.0)
             
             @self.command()
             def Trigger():
-                self.FpgaTopLevel.AppTop.DaqMuxV2[0].TriggerDaq.call()
-                self.FpgaTopLevel.AppTop.DaqMuxV2[1].TriggerDaq.call()
+                fpga.Trigger()
 
             # Run control
             self.add(pyrogue.RunControl(    name        = 'runControl',
