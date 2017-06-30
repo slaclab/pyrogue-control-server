@@ -51,7 +51,13 @@ def createGui(root):
     guiTop.resize(800, 1000)
     guiTop.addTree(root)
     print("Starting GUI...\n");
-    appTop.exec_()
+
+    try:
+        appTop.exec_()
+    except KeyboardInterrupt:
+        # Catch keyboard interrupts while the GUI was open
+        pass
+
     print("GUI was closed...")
 
 # Exit with a error message
