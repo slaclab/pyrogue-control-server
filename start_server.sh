@@ -27,8 +27,10 @@ usage() {
     echo "    -h                  : Show this message"
     echo "    -t <pyrogue.tar.gz> : tarball file with pyrogue definitions."
     echo "    -a <ip_addr>        : target IP address. Not used in client mode"
-    echo "    -g <group_name>     : Pyro4 group name used for remote clients (default \"pyrogue_test\")"
-    echo "    -s                  : Server Mode. It will start a server in this PC and export the root to remote client without launching a GUI"
+    echo "    -s                  : Server Mode. It will start a Pyro server in this PC and export the root to remote client without launching a GUI."
+    echo "                          An EPICS server will also be started in this mode."
+    echo "    -g <pyro_group>     : Pyro4 group name used for remote clients (default \"pyrogue_test\")"
+    echo "    -e <epics_prefix>   : EPICS PV name prefix (default \"pyrogue_test\")"
     echo ""
     exit
 }
@@ -52,6 +54,10 @@ do
             ;;
         -g)
             ARGS="$ARGS -g $2"
+            shift
+            ;;
+        -e)
+            ARGS="$ARGS -e $2"
             shift
             ;;
         -h)

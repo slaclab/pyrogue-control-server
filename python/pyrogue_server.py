@@ -30,6 +30,7 @@ import pyrogue.utilities.fileio
 import rogue.interfaces.stream
 import PyQt4.QtGui
 import pyrogue.gui
+import pyrogue.epics
 
 from FpgaTopLevel import *
 
@@ -38,8 +39,9 @@ def usage(name):
     print("Usage: %s -a|--addr IP_address [-s|--server] [-g|--group group_name] [-h|--help]" % name)
     print("    -h||--help                : show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
-    print("    -s|--server               : Start only the server (without GUI)")
+    print("    -s|--server               : Start only the Pyro and EPICS servers (without GUI)")
     print("    -g|--group group_name     : Pyro4 group name. Default = \"pyrogue_test\"")
+    print("    -e|--epics prefix         : EPICS PV name prefix. Default = \"pyrogue_test\"")
     print("")
 
 # Cretae gui interface
@@ -77,7 +79,7 @@ class NamingServer():
 # Local server class
 class localServer(pyrogue.Root):
 
-    def __init__(self, ipAddr, groupName, serverMode=False):
+    def __init__(self, ipAddr, serverMode, groupName, epicsPrefix):
 
         # In server mode, start the name server first
         if serverMode:
@@ -136,6 +138,11 @@ class localServer(pyrogue.Root):
         if not serverMode:
             createGui(self)
         else:
+            # Create EPICS server
+            print("Starting EPICS server using prefix \"%s\"" % epicsPrefix)
+            self.epics = pyrogue.epics.EpicsCaServer(epicsPrefix, self)
+            self.epics.start()
+
             # If in server mode, export the root for client
             hostName = getHostName()
             try:
@@ -155,7 +162,10 @@ class localServer(pyrogue.Root):
                 pass
 
     def stop(self):
-        print("Stopping server...")
+        print("Stopping servers...")
+        if hasattr(self, 'epics'):
+            print("Stopping EPICS server...")
+            self.epics.stop()
         super().stop()
 
         try:
@@ -166,13 +176,14 @@ class localServer(pyrogue.Root):
 # Main body
 def main(argv):
 
-    ipAddr     = ""
-    groupName  = "pyrogue_test"
-    serverMode = False
+    ipAddr      = ""
+    groupName   = "pyrogue_test"
+    epicsPrefix = "pyrogue_test"
+    serverMode  = False
 
     # Read Arguments
     try:
-        opts, args = getopt.getopt(argv,"ha:sg:",["help", "addr=", "server", "group="])
+        opts, args = getopt.getopt(argv,"ha:sg:e:",["help", "addr=", "server", "group=", "epics="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -187,6 +198,8 @@ def main(argv):
             serverMode = True
         elif opt in ("-g","--group"):       # Group name
             groupName = arg
+        elif opt in ("-e","--epics"):       # EPICS prefix
+            epicsPrefix = arg
 
 
     try:
@@ -205,7 +218,7 @@ def main(argv):
         exitMessage("    ERROR: FPGA can't be reached!")
 
     # Start pyRogue server
-    server = localServer(ipAddr, groupName, serverMode)
+    server = localServer(ipAddr, serverMode, groupName, epicsPrefix)
     
     # Stop server
     server.stop()        
