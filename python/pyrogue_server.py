@@ -114,7 +114,7 @@ class localServer(pyrogue.Root):
             # Run control for streaming interfaces
             self.add(pyrogue.RunControl(    name        = 'streamRunControl',
                                             description = 'Run controller',
-                                            cmd         = fpga.Trigger,
+                                            cmd         = fpga.SwDaqMuxTrig,
                                             rates       = {
                                                             1:  '1 Hz', 
                                                             10: '10 Hz', 
