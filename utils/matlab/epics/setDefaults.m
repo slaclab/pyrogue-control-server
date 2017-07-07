@@ -1,7 +1,4 @@
 % setDefaults sends a command to load the default configuration
-%   This command will be available only if a default file was pass 
-%   as an argument to the EPICS server at startup
-%
 
 function setDefaults
     % Global variables define by setEnv
