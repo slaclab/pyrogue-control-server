@@ -144,7 +144,7 @@ class localServer(pyrogue.Root):
             # Add data streams (0-7) to local variables so they are expose as PVs
             buf = []
             for i in range(8):
-                buf.append(dataBuffer(16*1024))
+                buf.append(dataBuffer(64*1024))
                 pyrogue.streamConnect(fpga.stream.application(0x80 + i ), buf[i])
                 self.add(pyrogue.LocalVariable(name='Stream%d' % i, description='Stream %d' % i, mode='RO', value=0, pollInterval=1.0, localGet=buf[i].getVal))
 
