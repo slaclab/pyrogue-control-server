@@ -73,7 +73,13 @@ function setEnv(prefix)
     
     % Send read All command
     readAll
-    
+
+    % Set default configuration
+    setDefaults
+
+    % Send readAll command
+    readAll
+
     % Print Build information
     disp('Firmware image information:')
     disp('==================================================')
