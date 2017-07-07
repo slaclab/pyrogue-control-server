@@ -2,11 +2,11 @@
 #-----------------------------------------------------------------------------
 # Title      : PyRogue Server Startup Script
 #-----------------------------------------------------------------------------
-# File       : start_server.sh
-# Created    : 2017-06-20
+# File       : start_epics.sh
+# Created    : 2017-07-07
 #-----------------------------------------------------------------------------
 # Description:
-# Bash script wrapper to start a PyRogue Server
+# Bash script wrapper to start a PyRogue EPICS Server
 #-----------------------------------------------------------------------------
 # This file is part of the pyrogue-control-server software platform. It is subject to 
 # the license terms in the LICENSE.txt file found in the top-level directory 
@@ -26,11 +26,9 @@ usage() {
     echo "usage: $SCRIPT_NAME -t <pyrogue.tar.gz> -a <ip_addr> [-s] [-g group_name] [-h]"
     echo "    -h                  : Show this message"
     echo "    -t <pyrogue.tar.gz> : tarball file with pyrogue definitions."
-    echo "    -a <ip_addr>        : target IP address. Not used in client mode"
-    echo "    -s                  : Server Mode. It will start a Pyro server in this PC and export the root to remote client without launching a GUI."
-    echo "                          An EPICS server will also be started in this mode."
-    echo "    -g <pyro_group>     : Pyro4 group name used for remote clients (default \"pyrogue_test\")"
-    echo "    -e <epics_prefix>   : EPICS PV name prefix (default \"pyrogue_test\")"
+    echo "    -a <ip_addr>        : target IP address."
+    echo "    -p <epics_prefix>   : EPICS PV name prefix (default \"pyrogue_test\")."
+    echo "    -d <config_file>    : Default configuration file (optional)"
     echo ""
     exit
 }
@@ -49,15 +47,12 @@ do
             TAR_FILE="$2"
             shift
             ;;
-        -s)
-            ARGS="$ARGS -s"
-            ;;
-        -g)
-            ARGS="$ARGS -g $2"
+        -p)
+            ARGS="$ARGS -p $2"
             shift
             ;;
-        -e)
-            ARGS="$ARGS -e $2"
+        -d)
+            ARGS="$ARGS -d $2"
             shift
             ;;
         -h)
@@ -100,6 +95,6 @@ export PYTHONPATH=$PYTHONPATH:$DIR/python
 
 # Start the server
 echo "Starting the server..."
-CMD="./python/pyrogue_server.py $ARGS"
+CMD="python/pyrogue_epics_server.py $ARGS"
 echo $CMD
 $CMD
