@@ -28,9 +28,6 @@ function continuosPlot(num, poll)
             % Get the size of the DaqMux
             stm_size = lcaGet(DMBufferSizePV)*2;
             
-            % Build the X-axis
-            x = 1:stm_size;
-
             % Create a new canvas with a break button to stop the loop
             dialogBox = uicontrol('Style', 'PushButton', 'String', 'Break','Callback', 'delete(gcbf)');
             set(gcf, 'Position', [100, 100, 1400, 1200]);
@@ -38,8 +35,15 @@ function continuosPlot(num, poll)
 
             i = 0;
             while (ishandle(dialogBox))
+                
+                % Read the data
+                y = lcaGet(streamPV(num + 1), stm_size);
+
+                % Build the X-axis
+                x = 1:min(stm_size,length(y));
+                
                 % Plot the data
-                plot(x,lcaGet(streamPV(num + 1), stm_size));
+                plot(x,y);
                 title(['Stream' num2str(num) '. (Shot ' num2str(i) ')']);
                 i = i + 1;
 
