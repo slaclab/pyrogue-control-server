@@ -151,17 +151,12 @@ class localServer(pyrogue.Root):
             # Set global timeout
             self.setTimeout(1.0)
 
-            # Read all register at startup
-            self.readAll
-
             # lcaPut limits the maximun lenght of a string to 40 chars, as defined in the EPICS R3.14 CA reference manual.
             # This won't allowed to use the command 'readConfig' with a long file path, which is usually the case.
             # This function is a workaround to that problem. Fomr matlab one can just call this function without arguments
             # an the function readConfig will be called with a predefined file passed during startup
-            if configFile:
-                self.configFile = configFile
-                self.add(pyrogue.LocalCommand(name='setDefaults', description='Set default configuration', function=self.setDefaultsCmd))
-                self.readConfig(configFile)
+            self.configFile = configFile
+            self.add(pyrogue.LocalCommand(name='setDefaults', description='Set default configuration', function=self.setDefaultsCmd))
 
         except KeyboardInterrupt:
             print("Killing server creation...")
