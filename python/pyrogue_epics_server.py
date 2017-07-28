@@ -61,9 +61,9 @@ class dataBuffer(rogue.interfaces.stream.Slave):
 
         # Data format: uint16, le
         self._dataByteOrder = '<'        
-        self._dataFormat    = 'H'
+        self._dataFormat    = 'h'
         self._dataSize      = 2
-        
+        self._callback      = lambda: None
 
     def _acceptFrame(self, frame):
         """
@@ -72,7 +72,11 @@ class dataBuffer(rogue.interfaces.stream.Slave):
         data = bytearray(frame.getPayload())
         frame.read(data, 0)
         self._buf = struct.unpack('%s%d%s' % (self._dataByteOrder, (len(data)//self._dataSize), self._dataFormat), data)
-        
+        self._callback()
+
+    def setCb(self,cb):
+        self._callback = cb
+
     def getVal(self):
         """
         Function to read the data buffer
@@ -133,7 +137,7 @@ class localServer(pyrogue.Root):
     def __init__(self, ipAddr, epicsPrefix, configFile):
         
         try:       
-            pyrogue.Root.__init__(self,'AMCc','AMC Carrier')
+            pyrogue.Root.__init__(self,name='AMCc',description='AMC Carrier')
 
             # Instantiate Fpga top level
             fpga = FpgaTopLevel(ipAddr=ipAddr)
@@ -146,7 +150,12 @@ class localServer(pyrogue.Root):
             for i in range(8):
                 buf.append(dataBuffer(64*1024))
                 pyrogue.streamConnect(fpga.stream.application(0x80 + i ), buf[i])
-                self.add(pyrogue.LocalVariable(name='Stream%d' % i, description='Stream %d' % i, mode='RO', value=0, pollInterval=1.0, localGet=buf[i].getVal))
+                v = pyrogue.LocalVariable(name='Stream%d' % i,
+                                          description='Stream %d' % i,
+                                          mode='RO', value=0, pollInterval=1.0,
+                                          localGet=buf[i].getVal,update=False,hidden=True)
+                self.add(v)
+                buf[i].setCb(v.updated)
 
             # Set global timeout
             self.setTimeout(1.0)
@@ -157,6 +166,10 @@ class localServer(pyrogue.Root):
             # an the function readConfig will be called with a predefined file passed during startup
             self.configFile = configFile
             self.add(pyrogue.LocalCommand(name='setDefaults', description='Set default configuration', function=self.setDefaultsCmd))
+
+            # Start the root
+            self.start()
+            self.readAll()
 
         except KeyboardInterrupt:
             print("Killing server creation...")
@@ -179,7 +192,7 @@ class localServer(pyrogue.Root):
         # Create EPICS server
         print("Starting EPICS server using prefix \"%s\"" % epicsPrefix)
         try:
-            self.epics = pyrogue.epics.EpicsCaServer(epicsPrefix, self)
+            self.epics = pyrogue.epics.EpicsCaServer(base=epicsPrefix, root=self)
             self.epics.start()
             print("EPICS server started. press Crtl+C to exit")
         except:
