@@ -146,7 +146,7 @@ class localServer(pyrogue.Root):
         else:
             # Create EPICS server
             print("Starting EPICS server using prefix \"%s\"" % epicsPrefix)
-            self.epics = pyrogue.epics.EpicsCaServer(epicsPrefix, self)
+            self.epics = pyrogue.epics.EpicsCaServer(base=epicsPrefix, root=self)
             self.epics.start()
 
             # If in server mode, export the root for client
