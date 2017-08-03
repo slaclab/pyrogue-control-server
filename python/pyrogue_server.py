@@ -122,6 +122,10 @@ class localServer(pyrogue.Root):
                                                            }
                                         ))
 
+            # Start the root
+            self.start()
+            self.readAll()
+
         except KeyboardInterrupt:
             print("Killing server creation...")
             super().stop()
