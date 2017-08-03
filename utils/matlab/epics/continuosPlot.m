@@ -22,8 +22,8 @@ function continuosPlot(num, poll)
         disp('Channel number not valid. Must be between 0 and 3.')
     else
 
-        if poll < 1
-            disp('poll must at least 1 second')
+        if poll < 0.1
+            disp('poll must at least 0.1 second')
         else
             % Get the size of the DaqMux
             stm_size = lcaGet(DMBufferSizePV)*2;
