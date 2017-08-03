@@ -37,14 +37,17 @@ function continuosPlot(num, poll)
             while (ishandle(dialogBox))
                 
                 % Read the data
-                y = lcaGet(streamPV(num + 1), stm_size);
+                [y, t] = lcaGet(streamPV(num + 1), stm_size);
+
+                % Get timestamp
+                timeStamp = real(t) + imag(t)*1e-9;
 
                 % Build the X-axis
                 x = 1:min(stm_size,length(y));
                 
                 % Plot the data
                 plot(x,y);
-                title(['Stream' num2str(num) '. (Shot ' num2str(i) ')']);
+                title(['Stream' num2str(num) '. (Shot ' num2str(i) '). [Time Stamp: ' num2str(timeStamp) ' s]']);
                 i = i + 1;
 
                 % Trigger the DaqMux
