@@ -109,7 +109,7 @@ class localServer(pyrogue.Root):
                pyrogue.streamConnect(fpga.stream.application(0x80 + i ), stmDataWriter.getChannel(i))
                
             # Set global timeout
-            self.setTimeout(1.0)
+            self.setTimeout(timeout=1)
             
             # Run control for streaming interfaces
             self.add(pyrogue.RunControl(    name        = 'streamRunControl',

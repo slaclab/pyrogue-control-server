@@ -158,7 +158,7 @@ class localServer(pyrogue.Root):
                 buf[i].setCb(v.updated)
 
             # Set global timeout
-            self.setTimeout(1.0)
+            self.setTimeout(timeout=1)
 
             # lcaPut limits the maximun lenght of a string to 40 chars, as defined in the EPICS R3.14 CA reference manual.
             # This won't allowed to use the command 'readConfig' with a long file path, which is usually the case.
