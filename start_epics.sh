@@ -90,7 +90,7 @@ echo "PyRogue directory = $DIR"
 
 # Setup the enviroment 
 echo "Setting the enviroment..."
-source /afs/slac/g/lcls/package/pyrogue/rogue/master/setup_env.sh
+source setup_rogue.sh
 export PYTHONPATH=$PYTHONPATH:$DIR/python
 
 # Start the server

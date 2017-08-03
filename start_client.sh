@@ -55,7 +55,7 @@ done
 echo ""
 
 echo "Setting the enviroment..."
-source /afs/slac/g/lcls/package/pyrogue/rogue/master/setup_env.sh
+source setup_rogue.sh
 
 # Start the client
 echo "Starting the client..."
