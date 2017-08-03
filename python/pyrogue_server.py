@@ -92,10 +92,10 @@ class localServer(pyrogue.Root):
             self.ns = NamingServer()
         
         try:       
-            pyrogue.Root.__init__(self,'AMCc','AMC Carrier')
+            pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
 
             # File writer for streaming interfaces
-            stmDataWriter = pyrogue.utilities.fileio.StreamWriter('streamDataWriter')
+            stmDataWriter = pyrogue.utilities.fileio.StreamWriter(name='streamDataWriter')
             self.add(stmDataWriter)
 
             # Instantiate Fpga top level
