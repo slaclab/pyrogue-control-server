@@ -31,6 +31,7 @@ function setEnv(prefix)
     global WEBStartAddrPV
     global WEBEndAddrPV
     global streamPV
+    global cmdJesdRst
     
     % PV name prefix
     PVNamePrefix = prefix;
@@ -48,6 +49,7 @@ function setEnv(prefix)
     upTimeCntPV            = [PVNamePrefix ':AMCc:FpgaTopLevel:AmcCarrierCore:AxiVersion:UpTimeCnt'];
     DMTriggerPV            = [PVNamePrefix ':AMCc:FpgaTopLevel:AppTop:DaqMuxV2[' num2str(DMIndex) ']:TriggerDaq'];
     DMBufferSizePV         = [PVNamePrefix ':AMCc:FpgaTopLevel:AppTop:DaqMuxV2[' num2str(DMIndex) ']:DataBufferSize'];
+    cmdJesdRst             = [PVNamePrefix ':AMCc:FpgaTopLevel:AppTop:JesdReset'];
     
     DMInputMuxSelPV    = {''};
     DMInputDataValidPV = {''};
