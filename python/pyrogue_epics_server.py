@@ -152,7 +152,7 @@ class localServer(pyrogue.Root):
                 pyrogue.streamConnect(fpga.stream.application(0x80 + i ), buf[i])
                 v = pyrogue.LocalVariable(name='Stream%d' % i,
                                           description='Stream %d' % i,
-                                          mode='RO', value=0, pollInterval=1.0,
+                                          mode='RO', value=0,
                                           localGet=buf[i].getVal,update=False,hidden=True)
                 self.add(v)
                 buf[i].setCb(v.updated)
