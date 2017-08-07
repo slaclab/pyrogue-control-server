@@ -68,8 +68,8 @@ class remoteClient(pyrogue.PyroRoot):
     def __init__(self, groupName):
         try:
             hostName = getHostName()
-            print("Creating client on %s and reading root from remtoe server" % hostName)
-            self.client = pyrogue.PyroClient(groupName, host=hostName)
+            print("Creating client on %s and reading root from remote server" % hostName)
+            self.client = pyrogue.PyroClient(group=groupName, host=hostName)
             self = self.client.getRoot('AMCc')
             createGui(self)
         except pyrogue.NodeError as e:
