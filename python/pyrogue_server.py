@@ -21,6 +21,7 @@ import getopt
 import socket 
 import os
 import subprocess
+import time
 
 import pyrogue
 import pyrogue.protocols
@@ -70,27 +71,11 @@ def exitMessage(message):
 def getHostName():
     return subprocess.check_output("hostname").strip().decode("utf-8")
 
-# Launch name server class    
-class NamingServer():
-    def __init__(self):
-        hostName = getHostName()
-        self.ns = subprocess.Popen(["python3", "-m", "Pyro4.naming", "-n", hostName])
-        print("Naming server started in host %s" % hostName)
-        print("")
-
-    def __del__(self):
-        self.ns.kill()
-        print("Naming server was killed")
-
 # Local server class
 class localServer(pyrogue.Root):
 
     def __init__(self, ipAddr, serverMode, groupName, epicsPrefix):
 
-        # In server mode, start the name server first
-        if serverMode:
-            self.ns = NamingServer()
-        
         try:       
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
 
@@ -123,7 +108,14 @@ class localServer(pyrogue.Root):
                                         ))
 
             # Start the root
-            self.start()
+            if serverMode:
+                hostName = getHostName()
+                print("Starting rogue server with Pyro using group name \"%s\"" % groupName)
+                self.start(pyroGroup=groupName, pyroHost=hostName, pyroNs=None)
+            else:
+                print("Starting rogue server")
+                self.start()
+
             self.readAll()
 
         except KeyboardInterrupt:
@@ -153,16 +145,6 @@ class localServer(pyrogue.Root):
             self.epics = pyrogue.epics.EpicsCaServer(base=epicsPrefix, root=self)
             self.epics.start()
 
-            # If in server mode, export the root for client
-            hostName = getHostName()
-            try:
-                print("Exporintg root to clients in group \"%s\" in host \"%s\"." % (groupName, hostName))
-                self.exportRoot(groupName, host=hostName)
-                print("Done!")
-                print ("Press Ctrl+C to stop the server")
-            except pyrogue.Node as e:
-                print("Error during root exporting: %s" % e)
-
             # Stop the server when Crtl+C is pressed
             try:
                 # Wait for Ctrl+C
@@ -177,11 +159,6 @@ class localServer(pyrogue.Root):
             print("Stopping EPICS server...")
             self.epics.stop()
         super().stop()
-
-        try:
-            del self.ns
-        except:
-            pass
 
 # Main body
 def main(argv):
