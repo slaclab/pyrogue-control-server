@@ -96,6 +96,7 @@ echo "PyRogue directory = $DIR"
 # Setup the enviroment 
 echo "Setting the enviroment..."
 source setup_rogue.sh
+source setup_epics.sh
 export PYTHONPATH=$PYTHONPATH:$DIR/python
 
 # Start the server
