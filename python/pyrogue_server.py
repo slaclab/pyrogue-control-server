@@ -91,7 +91,7 @@ class localServer(pyrogue.Root):
 
             # Add data streams (0-7) to file channels (0-7)
             for i in range(8):
-               pyrogue.streamConnect(fpga.stream.application(0x80 + i ), stmDataWriter.getChannel(i))
+                pyrogue.streamConnect(fpga.stream.application(0x80 + i ), stmDataWriter.getChannel(i))
                
             # Set global timeout
             self.setTimeout(timeout=1)
