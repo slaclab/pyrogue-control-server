@@ -18,16 +18,11 @@
 #-----------------------------------------------------------------------------
 import sys
 import getopt
-import socket 
-import os
 import subprocess
 
 import pyrogue
 import pyrogue.protocols
-import rogue.protocols.srp
-import rogue.protocols.udp
 import pyrogue.utilities.fileio
-import rogue.interfaces.stream
 import PyQt4.QtGui
 import pyrogue.gui
 
@@ -84,10 +79,7 @@ class remoteClient(pyrogue.PyroRoot):
 # Main body
 def main(argv):
 
-    ipAddr     = ""
     groupName  = "pyrogue_test"
-    serverMode = False
-    clientMode = False
 
     # Read Arguments
     try:
