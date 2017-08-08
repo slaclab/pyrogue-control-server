@@ -25,10 +25,7 @@ import time
 
 import pyrogue
 import pyrogue.protocols
-import rogue.protocols.srp
-import rogue.protocols.udp
 import pyrogue.utilities.fileio
-import rogue.interfaces.stream
 import PyQt4.QtGui
 import pyrogue.gui
 import pyrogue.epics
@@ -134,7 +131,7 @@ class localServer(pyrogue.Root):
             print("")
         except:
             print("  Warning: Error while reading build information")
-            
+
         # If no in server Mode, start the GUI
         if not serverMode:
             createGui(self)
