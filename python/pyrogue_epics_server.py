@@ -184,9 +184,11 @@ class localServer(pyrogue.Root):
             print("BuildStamp              : %s"   % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.BuildStamp.get())
             print("FPGA Version            : 0x%x" % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.FpgaVersion.get())
             print("Git hash                : 0x%x" % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.GitHash.get())
-            print("")
-        except:
-            print("  Warning: Error while reading build information")
+        except AttributeError as ae: 
+            print("Attibute error: %s" % ae)
+        except Exception:
+            print("Unexpected exception caught while reading build information")
+        print("")
 
         # Create EPICS server
         print("Starting EPICS server using prefix \"%s\"" % epicsPrefix)
