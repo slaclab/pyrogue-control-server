@@ -134,8 +134,7 @@ class localServer(pyrogue.Root):
             print("")
         except:
             print("  Warning: Error while reading build information")
-            pass
-
+            
         # If no in server Mode, start the GUI
         if not serverMode:
             createGui(self)

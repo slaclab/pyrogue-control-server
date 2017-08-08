@@ -187,7 +187,6 @@ class localServer(pyrogue.Root):
             print("")
         except:
             print("  Warning: Error while reading build information")
-            pass
 
         # Create EPICS server
         print("Starting EPICS server using prefix \"%s\"" % epicsPrefix)
