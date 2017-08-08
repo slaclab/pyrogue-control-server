@@ -61,20 +61,27 @@ def getHostName():
 # Remote client class
 class remoteClient(pyrogue.PyroRoot):
     def __init__(self, groupName):
+        hostName = getHostName()
         try:
-            hostName = getHostName()
-            print("Creating client on %s and reading root from remote server" % hostName)
+            print("Creating client on %s..." % hostName)
             self.client = pyrogue.PyroClient(group=groupName, host=hostName)
-            self = self.client.getRoot('AMCc')
-            createGui(self)
-        except pyrogue.NodeError as e:
-            print("Error during client creation: %s" % e) 
+        except pyrogue.NodeError as ne:
+            print("Error during client creation: %s" % ne)
+        else:
+            try:
+                print("Reading root from remote server...")
+                self = self.client.getRoot('AMCc')
+            except pyrogue.NodeError as ne:
+                print("Error reading the root from the server: %s" % ne)
+                self.client.stop()
+            else:
+                createGui(self)
 
     def __del__(self):
         try:
             self.client.stop()
-        except:
-            pass
+        except Exception as e:
+            print("Unexpected exception caught while destroying the remoteClient: %s" % e)
 
 # Main body
 def main(argv):
