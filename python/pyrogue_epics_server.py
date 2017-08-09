@@ -232,7 +232,7 @@ class LocalServer(pyrogue.Root):
 
 
 # Main body
-def main(argv):
+def main():
 
     IpAddr      = ""
     EpicsPrefix = "pyrogue_test"
@@ -240,7 +240,7 @@ def main(argv):
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(argv, "ha:p:d:", ["help", "addr=", "prefix=", "defaults="])
+        opts, _ = getopt.getopt(sys.argv[1:], "ha:p:d:", ["help", "addr=", "prefix=", "defaults="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -281,4 +281,4 @@ def main(argv):
     print("")
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

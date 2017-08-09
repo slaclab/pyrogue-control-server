@@ -78,13 +78,13 @@ class RemoteClient(pyrogue.PyroRoot):
             print("Unexpected exception caught while destroying the RemoteClient object: %s" % e)
 
 # Main body
-def main(argv):
+def main():
 
     GroupName = "pyrogue_test"
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(argv, "hg:", ["help", "group="])
+        opts, _ = getopt.getopt(sys.argv[1:], "hg:", ["help", "group="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -105,4 +105,4 @@ def main(argv):
     print("")
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
