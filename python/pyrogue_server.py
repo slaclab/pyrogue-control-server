@@ -81,6 +81,86 @@ def ExitMessage(message):
 def GetHostName():
     return subprocess.check_output("hostname").strip().decode("utf-8")
 
+class DataBuffer(rogue.interfaces.stream.Slave):
+    """
+    Data buffer class use to receive data from a stream interface and \
+    copies into a local buffer using a especific format
+    """
+    def __init__(self, size):
+        rogue.interfaces.stream.Slave.__init__(self)
+        print('Data buffer created')
+        self._buf = [0] * size
+
+        # Data format: uint16, le
+        self._DataByteOrder = '<'        
+        self._DataFormat    = 'h'
+        self._DataSize      = 2
+        self._callback      = lambda: None
+
+    def _acceptFrame(self, frame):
+        """
+        This method is called when a stream frame is received
+        """
+        data = bytearray(frame.getPayload())
+        frame.read(data, 0)
+        self._buf = struct.unpack('%s%d%s' % (self._DataByteOrder, \
+            (len(data)//self._DataSize), self._DataFormat), data)
+        self._callback()
+
+    def SetCb(self,cb):
+        self._callback = cb
+
+    def GetVal(self):
+        """
+        Function to read the data buffer
+        """
+        return self._buf
+
+    def SetDataFormat(self, FormatString):
+        """
+        Set data transformation format from war bytes.
+        FormatString must constain in this order:
+          - a character describing the byte order (optional)
+            * '<' : litle-endian
+            * '>' : big-endian
+          - a character describing the data format (optional)
+            * 'B' : unsigned 8-bit values
+            * 'b' : signed 8-bit values
+            * 'H' : unsigned 16-bit values
+            * 'h' : signed 16-bit values
+            * 'I' : unsigned 32-bit values
+            * 'i' : signed 32-bit values
+          Examples: '>H', '<', 'I'
+        """
+
+        if len(FormatString) == 2:
+            DataFormat = FormatString[1]
+            ByteOrder  = FormatString[0]
+        else:
+            if FormatString[0].isalpha():
+                DataFormat = FormatString[0]
+            else:
+                ByteOrder = FormatString[0]
+
+        if 'DataFormat' in locals():
+            if DataFormat == 'B' or DataFormat == 'b':      # uint8, int8
+                self._DataFormat = DataFormat
+                self._DataSize = 1
+            if DataFormat == 'H' or  DataFormat == 'h':     # uint16, int16
+                self._DataFormat = DataFormat
+                self._DataSize = 2
+            elif DataFormat == 'I' or DataFormat == 'i':    # uint32, int32
+                self._DataFormat = DataFormat
+                self._DataSize = 4
+            else:
+                print("Data format not supported: \"%s\"" % DataFormat)
+        
+        if 'ByteOrder' in locals():
+            if ByteOrder == '<' or ByteOrder == '>':        # le, be
+                self._DataByteOrder = ByteOrder
+            else:
+                print("Data byte order not supported: \"%s\"" % ByteOrder)
+
 # Local server class
 class LocalServer(pyrogue.Root):
 
@@ -102,7 +182,7 @@ class LocalServer(pyrogue.Root):
             # Add data streams (0-7) to file channels (0-7)
             for i in range(8):
                 pyrogue.streamConnect(fpga.stream.application(0x80 + i), StmDataWriter.getChannel(i))
-               
+            
             # Set global timeout
             self.setTimeout(timeout=1)
             
@@ -116,6 +196,34 @@ class LocalServer(pyrogue.Root):
                                                             30: '30 Hz'
                                                            }
                                         ))
+
+			# Devices used only with an EPICS server
+            if EpicsPrefix:
+            	# Add data streams (0-7) to local variables so they are expose as PVs
+	            buf = []
+	            for i in range(8):
+	                buf.append(DataBuffer(2*1024*1024))	# 2MB buffers
+	                pyrogue.streamTap(fpga.stream.application(0x80 + i), buf[i])
+	                V = pyrogue.LocalVariable(  name        = 'Stream%d' % i,
+	                                            description = 'Stream %d' % i,
+	                                            mode        = 'RO', 
+	                                            value       =  0,
+	                                            localGet    =  buf[i].GetVal, 
+	                                            update      =  False,
+	                                            hidden      =  True)
+	                self.add(V)
+	                buf[i].SetCb(V.updated)
+
+	                # lcaPut limits the maximun lenght of a string to 40 chars, as defined
+		            # in the EPICS R3.14 CA reference manual. This won't allowed to use the
+		            # command 'readConfig' with a long file path, which is usually the case.
+		            # This function is a workaround to that problem. Fomr matlab one can 
+		            # just call this function without arguments an the function readConfig 
+		            # will be called with a predefined file passed during startup
+		            self.ConfigFile = ConfigFile
+		            self.add(pyrogue.LocalCommand(  name        = 'setDefaults', 
+		                                            description = 'Set default configuration', 
+		                                            function    = self.SetDefaultsCmd))
 
             # Start the root
             if GroupName:
@@ -169,6 +277,16 @@ class LocalServer(pyrogue.Root):
                     time.sleep(1)           
             except KeyboardInterrupt:
                 pass
+
+    # Function for setting a default configuration. 
+    def SetDefaultsCmd(self):
+        # Check if a default configuration file has been defined
+        if not self.ConfigFile:
+            print('No default configuration file was specified...')
+            return
+
+        print('Setting defaults from file %s' % self.ConfigFile)
+        self.readConfig(self.ConfigFile)
 
     def stop(self):
         print("Stopping servers...")
