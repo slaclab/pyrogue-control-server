@@ -37,7 +37,7 @@ def usage(name):
 def create_gui(root):
     # Create GUI
     app_top = PyQt4.QtGui.QApplication(sys.argv)
-    gui_top = pyrogue.gui.gui_top(group='GuiTop')
+    gui_top = pyrogue.gui.GuiTop(group='GuiTop')
     gui_top.resize(800, 1000)
     gui_top.addTree(root)
     
