@@ -74,8 +74,8 @@ class RemoteClient(pyrogue.PyroRoot):
     def __del__(self):
         try:
             self.client.stop()
-        except Exception as E:
-            print("Unexpected exception caught while destroying the RemoteClient object: %s" % E)
+        except Exception as e:
+            print("Unexpected exception caught while destroying the RemoteClient object: %s" % e)
 
 # Main body
 def main(argv):
