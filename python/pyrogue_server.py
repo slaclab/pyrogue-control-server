@@ -176,15 +176,14 @@ class LocalServer(pyrogue.Root):
 
 # Main body
 def main():
-
     IpAddr      = ""
-    GroupName   = "pyrogue_test"
-    EpicsPrefix = "pyrogue_test"
+    GroupName   = ""
+    EpicsPrefix = ""
     ServerMode  = False
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "ha:sg:e:", ["help", "addr=", "server", "group=", "epics="])
+        opts, _ = getopt.getopt(sys.argv[1:], "ha:sp:e:", ["help", "addr=", "server", "pyro=", "epics="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -197,7 +196,7 @@ def main():
             IpAddr = arg
         elif opt in ("-s", "--server"):      # Server mode
             ServerMode = True
-        elif opt in ("-g", "--group"):       # Group name
+        elif opt in ("-p", "--pyro"):       # Group name
             GroupName = arg
         elif opt in ("-e", "--epics"):       # EPICS prefix
             EpicsPrefix = arg
@@ -217,6 +216,9 @@ def main():
         print("")
     except subprocess.CalledProcessError:
         ExitMessage("    ERROR: FPGA can't be reached!")
+
+    if ServerMode and not (GroupName or EpicsPrefix):
+    	ExitMessage("    ERROR: Can not start in server mode without Pyro or EPICS server")
 
     # Start pyRogue server
     server = LocalServer(IpAddr, ServerMode, GroupName, EpicsPrefix)
