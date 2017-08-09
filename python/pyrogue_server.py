@@ -34,7 +34,8 @@ from FpgaTopLevel import FpgaTopLevel
 
 # Print the usage message
 def usage(name):
-    print("Usage: %s -a|--addr IP_address [-s|--server] [-g|--group group_name] [-h|--help]" % name)
+    print("Usage: %s -a|--addr IP_address [-s|--server] \
+        [-g|--group group_name] [-h|--help]" % name)
     print("    -h||--help                : show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
     print("    -s|--server               : Start only the Pyro and EPICS servers (without GUI)")
@@ -43,15 +44,15 @@ def usage(name):
     print("")
 
 # Cretae gui interface
-def createGui(root):
-    appTop = PyQt4.QtGui.QApplication(sys.argv)
-    guiTop = pyrogue.gui.GuiTop(group='GuiTop')
-    guiTop.resize(800, 1000)
-    guiTop.addTree(root)
-    print("Starting GUI...\n");
+def CreateGui(root):
+    AppTop = PyQt4.QtGui.QApplication(sys.argv)
+    GuiTop = pyrogue.gui.GuiTop(group='GuiTop')
+    GuiTop.resize(800, 1000)
+    GuiTop.addTree(root)
+    print("Starting GUI...\n")
 
     try:
-        appTop.exec_()
+        AppTop.exec_()
     except KeyboardInterrupt:
         # Catch keyboard interrupts while the GUI was open
         pass
@@ -59,36 +60,36 @@ def createGui(root):
     print("GUI was closed...")
 
 # Exit with a error message
-def exitMessage(message):
+def ExitMessage(message):
     print(message)
     print("")
     exit()
 
 # Get the hostname of this PC
-def getHostName():
+def GetHostName():
     return subprocess.check_output("hostname").strip().decode("utf-8")
 
 # Local server class
-class localServer(pyrogue.Root):
+class LocalServer(pyrogue.Root):
 
-    def __init__(self, ipAddr, serverMode, groupName, epicsPrefix):
+    def __init__(self, IpAddr, ServerMode, GroupName, EpicsPrefix):
 
         try:       
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
 
             # File writer for streaming interfaces
-            stmDataWriter = pyrogue.utilities.fileio.StreamWriter(name='streamDataWriter')
-            self.add(stmDataWriter)
+            StmDataWriter = pyrogue.utilities.fileio.StreamWriter(name='streamDataWriter')
+            self.add(StmDataWriter)
 
             # Instantiate Fpga top level
-            fpga = FpgaTopLevel(ipAddr=ipAddr)
+            fpga = FpgaTopLevel(ipAddr=IpAddr)
 
             # Add devices     
             self.add(fpga)
 
             # Add data streams (0-7) to file channels (0-7)
             for i in range(8):
-                pyrogue.streamConnect(fpga.stream.application(0x80 + i ), stmDataWriter.getChannel(i))
+                pyrogue.streamConnect(fpga.stream.application(0x80 + i), StmDataWriter.getChannel(i))
                
             # Set global timeout
             self.setTimeout(timeout=1)
@@ -105,10 +106,10 @@ class localServer(pyrogue.Root):
                                         ))
 
             # Start the root
-            if serverMode:
-                hostName = getHostName()
-                print("Starting rogue server with Pyro using group name \"%s\"" % groupName)
-                self.start(pyroGroup=groupName, pyroHost=hostName, pyroNs=None)
+            if ServerMode:
+                HostName = GetHostName()
+                print("Starting rogue server with Pyro using group name \"%s\"" % GroupName)
+                self.start(pyroGroup=GroupName, pyroHost=HostName, pyroNs=None)
             else:
                 print("Starting rogue server")
                 self.start()
@@ -117,7 +118,7 @@ class localServer(pyrogue.Root):
 
         except KeyboardInterrupt:
             print("Killing server creation...")
-            super(localServer, self).stop()
+            super(LocalServer, self).stop()
             exit()
         
         # Show image build information
@@ -125,22 +126,25 @@ class localServer(pyrogue.Root):
             print("")
             print("FPGA image build information:")
             print("===================================")
-            print("BuildStamp              : %s" % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.BuildStamp.get())
-            print("FPGA Version            : 0x%x" % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.FpgaVersion.get())
-            print("Git hash                : 0x%x" % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.GitHash.get())
-        except AttributeError as ae: 
-            print("Attibute error: %s" % ae)
+            print("BuildStamp              : %s" % \
+                self.FpgaTopLevel.AmcCarrierCore.AxiVersion.BuildStamp.get())
+            print("FPGA Version            : 0x%x" % \
+                self.FpgaTopLevel.AmcCarrierCore.AxiVersion.FpgaVersion.get())
+            print("Git hash                : 0x%x" % \
+                self.FpgaTopLevel.AmcCarrierCore.AxiVersion.GitHash.get())
+        except AttributeError as AE: 
+            print("Attibute error: %s" % AE)
         except Exception as e:
             print("Unexpected exception caught while reading build information: %s" % e)
         print("")
 
         # If no in server Mode, start the GUI
-        if not serverMode:
-            createGui(self)
+        if not ServerMode:
+            CreateGui(self)
         else:
             # Create EPICS server
-            print("Starting EPICS server using prefix \"%s\"" % epicsPrefix)
-            self.epics = pyrogue.epics.EpicsCaServer(base=epicsPrefix, root=self)
+            print("Starting EPICS server using prefix \"%s\"" % EpicsPrefix)
+            self.epics = pyrogue.epics.EpicsCaServer(base=EpicsPrefix, root=self)
             self.epics.start()
 
             # Stop the server when Crtl+C is pressed
@@ -156,54 +160,54 @@ class localServer(pyrogue.Root):
         if hasattr(self, 'epics'):
             print("Stopping EPICS server...")
             self.epics.stop()
-        super(localServer, self).stop()
+        super(LocalServer, self).stop()
 
 # Main body
-def main(argv):
+def main():
 
-    ipAddr      = ""
-    groupName   = "pyrogue_test"
-    epicsPrefix = "pyrogue_test"
-    serverMode  = False
+    IpAddr      = ""
+    GroupName   = "pyrogue_test"
+    EpicsPrefix = "pyrogue_test"
+    ServerMode  = False
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(argv,"ha:sg:e:",["help", "addr=", "server", "group=", "epics="])
+        opts, _ = getopt.getopt(sys.argv[1:], "ha:sg:e:", ["help", "addr=", "server", "group=", "epics="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
 
     for opt, arg in opts:
-        if opt in ("-h","--help"):
+        if opt in ("-h", "--help"):
             usage(sys.argv[0])
             sys.exit()
-        elif opt in ("-a","--addr"):        # IP Address
-            ipAddr = arg
-        elif opt in ("-s","--server"):      # Server mode
-            serverMode = True
-        elif opt in ("-g","--group"):       # Group name
-            groupName = arg
-        elif opt in ("-e","--epics"):       # EPICS prefix
-            epicsPrefix = arg
+        elif opt in ("-a", "--addr"):        # IP Address
+            IpAddr = arg
+        elif opt in ("-s", "--server"):      # Server mode
+            ServerMode = True
+        elif opt in ("-g", "--group"):       # Group name
+            GroupName = arg
+        elif opt in ("-e", "--epics"):       # EPICS prefix
+            EpicsPrefix = arg
 
 
     try:
-        socket.inet_aton(ipAddr)
+        socket.inet_aton(IpAddr)
     except socket.error:
-        exitMessage("ERROR: Invalid IP Address.")
+        ExitMessage("ERROR: Invalid IP Address.")
 
     print("")
     print("Trying to ping the FPGA...")
     try:
-        FNULL = open(os.devnull, 'w')
-        subprocess.check_call(["ping", "-c2", ipAddr], stdout=FNULL, stderr=FNULL)
+        DevNull = open(os.devnull, 'w')
+        subprocess.check_call(["ping", "-c2", IpAddr], stdout=DevNull, stderr=DevNull)
         print("    FPGA is online")
         print("")
     except subprocess.CalledProcessError:
-        exitMessage("    ERROR: FPGA can't be reached!")
+        ExitMessage("    ERROR: FPGA can't be reached!")
 
     # Start pyRogue server
-    server = localServer(ipAddr, serverMode, groupName, epicsPrefix)
+    server = LocalServer(IpAddr, ServerMode, GroupName, EpicsPrefix)
     
     # Stop server
     server.stop()        
