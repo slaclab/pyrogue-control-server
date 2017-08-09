@@ -34,70 +34,70 @@ def usage(name):
     print("")
 
 # Cretae gui interface
-def createGui(root):
+def CreateGui(root):
     # Create GUI
-    appTop = PyQt4.QtGui.QApplication(sys.argv)
-    guiTop = pyrogue.gui.GuiTop(group='GuiTop')
-    guiTop.resize(800, 1000)
-    guiTop.addTree(root)
+    AppTop = PyQt4.QtGui.QApplication(sys.argv)
+    GuiTop = pyrogue.gui.GuiTop(group='GuiTop')
+    GuiTop.resize(800, 1000)
+    GuiTop.addTree(root)
     
-    print("Starting GUI...\n");
+    print("Starting GUI...\n")
     
     # Run GUI
-    appTop.exec_()
+    AppTop.exec_()
 
     print("GUI was closed...")
 
 # Get the hostname of this PC
-def getHostName():
+def GetHostName():
     return subprocess.check_output("hostname").strip().decode("utf-8")
 
 # Remote client class
-class remoteClient(pyrogue.PyroRoot):
-    def __init__(self, groupName):
-        hostName = getHostName()
+class RemoteClient(pyrogue.PyroRoot):
+    def __init__(self, GroupName):
+        HostName = GetHostName()
         try:
-            print("Creating client on %s..." % hostName)
-            self.client = pyrogue.PyroClient(group=groupName, host=hostName)
-        except pyrogue.NodeError as ne:
-            print("Error during client creation: %s" % ne)
+            print("Creating client on %s..." % HostName)
+            self.client = pyrogue.PyroClient(group=GroupName, host=HostName)
+        except pyrogue.NodeError as NE:
+            print("Error during client creation: %s" % NE)
         else:
             try:
                 print("Reading root from remote server...")
                 self = self.client.getRoot('AMCc')
-            except pyrogue.NodeError as ne:
-                print("Error reading the root from the server: %s" % ne)
+            except pyrogue.NodeError as NE:
+                print("Error reading the root from the server: %s" % NE)
                 self.client.stop()
             else:
-                createGui(self)
+                CreateGui(self)
 
     def __del__(self):
         try:
             self.client.stop()
-        except Exception as e:
-            print("Unexpected exception caught while destroying the remoteClient: %s" % e)
+        except Exception as E:
+            print("Unexpected exception caught while destroying the RemoteClient object: %s" % E)
 
 # Main body
 def main(argv):
 
-    groupName  = "pyrogue_test"
+    GroupName = "pyrogue_test"
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(argv,"hg:",["help", "group="])
+        opts, _ = getopt.getopt(argv, "hg:", ["help", "group="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
 
     for opt, arg in opts:
-        if opt in ("-h","--help"):
+        if opt in ("-h", "--help"):
             usage(sys.argv[0])
             sys.exit()
-        elif opt in ("-g","--group"):       # Group name
-            groupName = arg
+        elif opt in ("-g", "--group"):       # Group name
+            GroupName = arg
     
     # Start client
-    client = remoteClient(groupName)
+    client = RemoteClient(GroupName)
 
     # Stop client
     del client
