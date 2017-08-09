@@ -3,4 +3,4 @@ python-targets:
   - 3
 pylint:
   options:
-    good-name: e, ne, re
+    good-names: e, ne, re
