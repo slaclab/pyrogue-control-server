@@ -346,7 +346,11 @@ def main():
     	ExitMessage("    ERROR: Can not start in server mode without Pyro or EPICS server")
 
     # Start pyRogue server
-    server = LocalServer(IpAddr, ConfigFile, ServerMode, GroupName, EpicsPrefix)
+    server = LocalServer(	IpAddr      = IpAddr, 
+    						ConfigFile  = ConfigFile, 
+    						ServerMode  = ServerMode, 
+    						GroupName   = GroupName, 
+    						EpicsPrefix = EpicsPrefix)
     
     # Stop server
     server.stop()        
