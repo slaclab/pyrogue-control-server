@@ -74,7 +74,7 @@ class RemoteClient(pyrogue.PyroRoot):
     def __del__(self):
         try:
             self.client.stop()
-        except Exception as re:
+        except RecursionError as re:
             print("Error while destroying the remote client object: %s" % re)
 
 # Main body
