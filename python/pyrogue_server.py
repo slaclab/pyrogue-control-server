@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 #-----------------------------------------------------------------------------
 # Title      : PyRogue Server
 #-----------------------------------------------------------------------------
@@ -35,12 +35,24 @@ from FpgaTopLevel import FpgaTopLevel
 # Print the usage message
 def usage(name):
     print("Usage: %s -a|--addr IP_address [-s|--server] \
-        [-g|--group group_name] [-h|--help]" % name)
+        [-p|--pyro group_name] [-e|--epics prefix] [-h|--help]" \
+        % name)
     print("    -h||--help                : show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
-    print("    -s|--server               : Start only the Pyro and EPICS servers (without GUI)")
-    print("    -g|--group group_name     : Pyro4 group name. Default = \"pyrogue_test\"")
-    print("    -e|--epics prefix         : EPICS PV name prefix. Default = \"pyrogue_test\"")
+    print("    -p|--pyro group_name      : Start a Pyro4 server with group name \"group_name\"")
+    print("    -e|--epics prefix         : Start an EPICS server with PV name prefix \"prefix\"")
+    print("    -s|--server               : Server mode, without staring a GUI (Must be use with -p and/or -e)")
+    print("")
+    print("Examples:")
+    print("    %s -a IP_address                           : \
+    	Start a local rogue server, with GUI, without Pyro nor EPICS servers" \
+    	% name)
+    print("    %s -a IP_address -e prefix                 : \
+    	Start a local rogue server, with GUI, with EPICS server" \
+    	% name)
+    print("    %s -a IP_address -e prefix -p group_name -s : \
+    	Start a local rogure server, without GUI, with Pyro and EPICS servers" \
+    	% name)
     print("")
 
 # Cretae gui interface
