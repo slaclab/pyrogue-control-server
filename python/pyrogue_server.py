@@ -168,7 +168,7 @@ def main(argv):
 
     # Read Arguments
     try:
-        opts, args = getopt.getopt(argv,"ha:sg:e:",["help", "addr=", "server", "group=", "epics="])
+        opts, _ = getopt.getopt(argv,"ha:sg:e:",["help", "addr=", "server", "group=", "epics="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()

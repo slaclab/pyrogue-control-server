@@ -84,7 +84,7 @@ def main(argv):
 
     # Read Arguments
     try:
-        opts, args = getopt.getopt(argv,"hg:",["help", "group="])
+        opts, _ = getopt.getopt(argv,"hg:",["help", "group="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()

@@ -230,7 +230,7 @@ def main(argv):
 
     # Read Arguments
     try:
-        opts, args = getopt.getopt(argv,"ha:p:d:",["help", "addr=", "prefix=", "defaults="])
+        opts, _ = getopt.getopt(argv,"ha:p:d:",["help", "addr=", "prefix=", "defaults="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
