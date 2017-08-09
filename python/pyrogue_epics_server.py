@@ -196,8 +196,8 @@ class localServer(pyrogue.Root):
             self.epics = pyrogue.epics.EpicsCaServer(base=epicsPrefix, root=self)
             self.epics.start()
             print("EPICS server started. press Crtl+C to exit")
-        except:
-            print("  ERROR: Couldn't start the EPICS server...")
+        except Exception as e:
+            print("  ERROR: Couldn't start the EPICS server: %s" % e)
             return
 
         # Stop the server when Crtl+C is pressed
