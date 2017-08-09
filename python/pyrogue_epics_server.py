@@ -186,8 +186,8 @@ class localServer(pyrogue.Root):
             print("Git hash                : 0x%x" % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.GitHash.get())
         except AttributeError as ae: 
             print("Attibute error: %s" % ae)
-        except Exception:
-            print("Unexpected exception caught while reading build information")
+        except Exception as e:
+            print("Unexpected exception caught while reading build information: %s" % e)
         print("")
 
         # Create EPICS server
