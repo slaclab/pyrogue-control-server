@@ -48,12 +48,6 @@ def createGui(root):
 
     print("GUI was closed...")
 
-# Exit with a error message
-def exitMessage(message):
-    print(message)
-    print("")
-    exit()
-
 # Get the hostname of this PC
 def getHostName():
     return subprocess.check_output("hostname").strip().decode("utf-8")
