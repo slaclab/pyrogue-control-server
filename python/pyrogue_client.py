@@ -34,9 +34,9 @@ def usage(name):
     print("")
 
 # Cretae gui interface
-def CreateGui(root):
+def create_gui(root):
     # Create GUI
-    AppTop = PyQt4.QtGui.QApplication(sys.argv)
+    app_top = PyQt4.QtGui.QApplication(sys.argv)
     GuiTop = pyrogue.gui.GuiTop(group='GuiTop')
     GuiTop.resize(800, 1000)
     GuiTop.addTree(root)
@@ -44,18 +44,18 @@ def CreateGui(root):
     print("Starting GUI...\n")
     
     # Run GUI
-    AppTop.exec_()
+    app_top.exec_()
 
     print("GUI was closed...")
 
 # Get the hostname of this PC
-def GetHostName():
+def get_host_name():
     return subprocess.check_output("hostname").strip().decode("utf-8")
 
 # Remote client class
 class RemoteClient(pyrogue.PyroRoot):
     def __init__(self, GroupName):
-        HostName = GetHostName()
+        HostName = get_host_name()
         try:
             print("Creating client on %s..." % HostName)
             self.client = pyrogue.PyroClient(group=GroupName, host=HostName)
@@ -69,7 +69,7 @@ class RemoteClient(pyrogue.PyroRoot):
                 print("Error reading the root from the server: %s" % NE)
                 self.client.stop()
             else:
-                CreateGui(self)
+                create_gui(self)
 
     def __del__(self):
         try:
