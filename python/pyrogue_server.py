@@ -34,11 +34,12 @@ from FpgaTopLevel import FpgaTopLevel
 
 # Print the usage message
 def usage(name):
-    print("Usage: %s -a|--addr IP_address [-s|--server] \
-        [-p|--pyro group_name] [-e|--epics prefix] [-h|--help]" \
+    print("Usage: %s -a|--addr IP_address [-d|--defaults config_file] \
+    	[-s|--server] [-p|--pyro group_name] [-e|--epics prefix] [-h|--help]" \
         % name)
     print("    -h||--help                : show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
+    print("    -d|--defaults config_file : Default configuration file (optional)")
     print("    -p|--pyro group_name      : Start a Pyro4 server with group name \"group_name\"")
     print("    -e|--epics prefix         : Start an EPICS server with PV name prefix \"prefix\"")
     print("    -s|--server               : Server mode, without staring a GUI (Must be use with -p and/or -e)")
@@ -164,7 +165,7 @@ class DataBuffer(rogue.interfaces.stream.Slave):
 # Local server class
 class LocalServer(pyrogue.Root):
 
-    def __init__(self, IpAddr, ServerMode, GroupName, EpicsPrefix):
+    def __init__(self, IpAddr, ConfigFile, ServerMode, GroupName, EpicsPrefix):
 
         try:       
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
@@ -214,16 +215,17 @@ class LocalServer(pyrogue.Root):
 	                self.add(V)
 	                buf[i].SetCb(V.updated)
 
-	                # lcaPut limits the maximun lenght of a string to 40 chars, as defined
-		            # in the EPICS R3.14 CA reference manual. This won't allowed to use the
-		            # command 'readConfig' with a long file path, which is usually the case.
-		            # This function is a workaround to that problem. Fomr matlab one can 
-		            # just call this function without arguments an the function readConfig 
-		            # will be called with a predefined file passed during startup
-		            self.ConfigFile = ConfigFile
-		            self.add(pyrogue.LocalCommand(  name        = 'setDefaults', 
-		                                            description = 'Set default configuration', 
-		                                            function    = self.SetDefaultsCmd))
+            # lcaPut limits the maximun lenght of a string to 40 chars, as defined
+            # in the EPICS R3.14 CA reference manual. This won't allowed to use the
+            # command 'readConfig' with a long file path, which is usually the case.
+            # This function is a workaround to that problem. Fomr matlab one can 
+            # just call this function without arguments an the function readConfig 
+            # will be called with a predefined file passed during startup
+            # However, it can be usefull also win the GUI, so it is always added.
+            self.ConfigFile = ConfigFile
+            self.add(pyrogue.LocalCommand(  name        = 'setDefaults', 
+                                            description = 'Set default configuration', 
+                                            function    = self.SetDefaultsCmd))
 
             # Start the root
             if GroupName:
@@ -300,11 +302,12 @@ def main():
     IpAddr      = ""
     GroupName   = ""
     EpicsPrefix = ""
+    ConfigFile  = ""
     ServerMode  = False
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "ha:sp:e:", ["help", "addr=", "server", "pyro=", "epics="])
+        opts, _ = getopt.getopt(sys.argv[1:], "ha:sp:e:d:", ["help", "addr=", "server", "pyro=", "epics=", "defaults="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -313,15 +316,16 @@ def main():
         if opt in ("-h", "--help"):
             usage(sys.argv[0])
             sys.exit()
-        elif opt in ("-a", "--addr"):        # IP Address
+        elif opt in ("-a", "--addr"):		# IP Address
             IpAddr = arg
-        elif opt in ("-s", "--server"):      # Server mode
+        elif opt in ("-s", "--server"):     # Server mode
             ServerMode = True
-        elif opt in ("-p", "--pyro"):       # Group name
+        elif opt in ("-p", "--pyro"):       # Pyro group name
             GroupName = arg
-        elif opt in ("-e", "--epics"):       # EPICS prefix
+        elif opt in ("-e", "--epics"):      # EPICS prefix
             EpicsPrefix = arg
-
+        elif opt in ("-d", "--defaults"):   # Default configuration file
+            ConfigFile = arg
 
     try:
         socket.inet_aton(IpAddr)
@@ -342,7 +346,7 @@ def main():
     	ExitMessage("    ERROR: Can not start in server mode without Pyro or EPICS server")
 
     # Start pyRogue server
-    server = LocalServer(IpAddr, ServerMode, GroupName, EpicsPrefix)
+    server = LocalServer(IpAddr, ConfigFile, ServerMode, GroupName, EpicsPrefix)
     
     # Stop server
     server.stop()        
