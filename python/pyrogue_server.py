@@ -118,11 +118,13 @@ class LocalServer(pyrogue.Root):
                                         ))
 
             # Start the root
-            if ServerMode:
+            if GroupName:
+            	# Start with Pyro4 server
                 HostName = GetHostName()
                 print("Starting rogue server with Pyro using group name \"%s\"" % GroupName)
                 self.start(pyroGroup=GroupName, pyroHost=HostName, pyroNs=None)
             else:
+            	# Start without Pyro4 server
                 print("Starting rogue server")
                 self.start()
 
@@ -150,15 +152,16 @@ class LocalServer(pyrogue.Root):
             print("Unexpected exception caught while reading build information: %s" % e)
         print("")
 
+        # Start the EPICS server
+        if EpicsPrefix:
+        	print("Starting EPICS server using prefix \"%s\"" % EpicsPrefix)
+            self.epics = pyrogue.epics.EpicsCaServer(base=EpicsPrefix, root=self)
+            self.epics.start()
+
         # If no in server Mode, start the GUI
         if not ServerMode:
             CreateGui(self)
         else:
-            # Create EPICS server
-            print("Starting EPICS server using prefix \"%s\"" % EpicsPrefix)
-            self.epics = pyrogue.epics.EpicsCaServer(base=EpicsPrefix, root=self)
-            self.epics.start()
-
             # Stop the server when Crtl+C is pressed
             try:
                 # Wait for Ctrl+C
