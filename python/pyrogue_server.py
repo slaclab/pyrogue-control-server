@@ -30,7 +30,7 @@ import PyQt4.QtGui
 import pyrogue.gui
 import pyrogue.epics
 
-from FpgaTopLevel import *
+from FpgaTopLevel import FpgaTopLevel
 
 # Print the usage message
 def usage(name):

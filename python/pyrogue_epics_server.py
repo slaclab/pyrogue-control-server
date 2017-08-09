@@ -33,7 +33,7 @@ import rogue.interfaces.stream
 import pyrogue.epics
 import pyrogue.utilities.prbs
 
-from FpgaTopLevel import *
+from FpgaTopLevel import FpgaTopLevel
 
 # Print the usage message
 def usage(name):
