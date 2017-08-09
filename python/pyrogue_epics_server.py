@@ -37,7 +37,8 @@ from FpgaTopLevel import FpgaTopLevel
 
 # Print the usage message
 def usage(name):
-    print("Usage: %s -a|--addr IP_address [-s|--server] [-g|--group group_name] [-d|--defaults config_file] [-h|--help]" % name)
+    print("Usage: %s -a|--addr IP_address [-s|--server] [-g|--group group_name] \
+        [-d|--defaults config_file] [-h|--help]" % name)
     print("    -h||--help                : show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
     print("    -e|--prefixi epics_prefix : EPICS PV name prefix. Default = \"pyrogue_test\"")
@@ -45,14 +46,15 @@ def usage(name):
     print("")
 
 # Exit with a error message
-def exitMessage(message):
+def ExitMessage(message):
     print(message)
     print("")
     exit()
 
-class dataBuffer(rogue.interfaces.stream.Slave):
+class DataBuffer(rogue.interfaces.stream.Slave):
     """
-    Data buffer class use to receive data from a stream interface and copies into a local buffer using a especific format
+    Data buffer class use to receive data from a stream interface and \
+    copies into a local buffer using a especific format
     """
     def __init__(self, size):
         rogue.interfaces.stream.Slave.__init__(self)
@@ -60,9 +62,9 @@ class dataBuffer(rogue.interfaces.stream.Slave):
         self._buf = [0] * size
 
         # Data format: uint16, le
-        self._dataByteOrder = '<'        
-        self._dataFormat    = 'h'
-        self._dataSize      = 2
+        self._DataByteOrder = '<'        
+        self._DataFormat    = 'h'
+        self._DataSize      = 2
         self._callback      = lambda: None
 
     def _acceptFrame(self, frame):
@@ -71,22 +73,23 @@ class dataBuffer(rogue.interfaces.stream.Slave):
         """
         data = bytearray(frame.getPayload())
         frame.read(data, 0)
-        self._buf = struct.unpack('%s%d%s' % (self._dataByteOrder, (len(data)//self._dataSize), self._dataFormat), data)
+        self._buf = struct.unpack('%s%d%s' % (self._DataByteOrder, \
+            (len(data)//self._DataSize), self._DataFormat), data)
         self._callback()
 
-    def setCb(self,cb):
+    def SetCb(self,cb):
         self._callback = cb
 
-    def getVal(self):
+    def GetVal(self):
         """
         Function to read the data buffer
         """
         return self._buf
 
-    def setDataFormat(self, formatString):
+    def SetDataFormat(self, FormatString):
         """
         Set data transformation format from war bytes.
-        formatString must constain in this order:
+        FormatString must constain in this order:
           - a character describing the byte order (optional)
             * '<' : litle-endian
             * '>' : big-endian
@@ -100,44 +103,44 @@ class dataBuffer(rogue.interfaces.stream.Slave):
           Examples: '>H', '<', 'I'
         """
 
-        if len(formatString) == 2:
-            dataFormat = formatString[1]
-            byteOrder  = formatString[0]
+        if len(FormatString) == 2:
+            DataFormat = FormatString[1]
+            ByteOrder  = FormatString[0]
         else:
-            if formatString[0].isalpha():
-                dataFormat = formatString[0]
+            if FormatString[0].isalpha():
+                DataFormat = FormatString[0]
             else:
-                byteOrder = formatString[0]
+                ByteOrder = FormatString[0]
 
-        if 'dataFormat' in locals():
-            if dataFormat == 'B' or dataFormat == 'b':      # uint8, int8
-                self._dataFormat = dataFormat
-                self._dataSize   = 1
-            if dataFormat == 'H' or  dataFormat == 'h':     # uint16, int16
-                self._dataFormat = dataFormat
-                self._dataSize   = 2
-            elif dataFormat == 'I' or dataFormat == 'i':    # uint32, int32
-                self._dataFormat = dataFormat
-                self._dataSize   = 4
+        if 'DataFormat' in locals():
+            if DataFormat == 'B' or DataFormat == 'b':      # uint8, int8
+                self._DataFormat = DataFormat
+                self._DataSize = 1
+            if DataFormat == 'H' or  DataFormat == 'h':     # uint16, int16
+                self._DataFormat = DataFormat
+                self._DataSize = 2
+            elif DataFormat == 'I' or DataFormat == 'i':    # uint32, int32
+                self._DataFormat = DataFormat
+                self._DataSize = 4
             else:
-                print("Data format not supported: \"%s\"" % dataFormat)
+                print("Data format not supported: \"%s\"" % DataFormat)
         
-        if 'byteOrder' in locals():
-            if byteOrder == '<' or byteOrder == '>':        # le, be
-                self._dataByteOrder = byteOrder
+        if 'ByteOrder' in locals():
+            if ByteOrder == '<' or ByteOrder == '>':        # le, be
+                self._DataByteOrder = ByteOrder
             else:
-                print("Data byte order not supported: \"%s\"" % byteOrder)
+                print("Data byte order not supported: \"%s\"" % ByteOrder)
 
 # Local server class
-class localServer(pyrogue.Root):
+class LocalServer(pyrogue.Root):
 
-    def __init__(self, ipAddr, epicsPrefix, configFile):
+    def __init__(self, IpAddr, EpicsPrefix, ConfigFile):
         
         try:       
-            pyrogue.Root.__init__(self,name='AMCc',description='AMC Carrier')
+            pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
 
             # Instantiate Fpga top level
-            fpga = FpgaTopLevel(ipAddr=ipAddr)
+            fpga = FpgaTopLevel(ipAddr=IpAddr)
 
             # Add devices     
             self.add(fpga)
@@ -145,24 +148,31 @@ class localServer(pyrogue.Root):
             # Add data streams (0-7) to local variables so they are expose as PVs
             buf = []
             for i in range(8):
-                buf.append(dataBuffer(2*1024*1024))	# 2MB buffers
-                pyrogue.streamConnect(fpga.stream.application(0x80 + i ), buf[i])
-                v = pyrogue.LocalVariable(name='Stream%d' % i,
-                                          description='Stream %d' % i,
-                                          mode='RO', value=0,
-                                          localGet=buf[i].getVal,update=False,hidden=True)
-                self.add(v)
-                buf[i].setCb(v.updated)
+                buf.append(DataBuffer(2*1024*1024))	# 2MB buffers
+                pyrogue.streamConnect(fpga.stream.application(0x80 + i), buf[i])
+                V = pyrogue.LocalVariable(  name        = 'Stream%d' % i,
+                                            description = 'Stream %d' % i,
+                                            mode        = 'RO', 
+                                            value       = 0,
+                                            localGet    = buf[i].GetVal, 
+                                            update      = False,
+                                            hidden      = True)
+                self.add(V)
+                buf[i].SetCb(V.updated)
 
             # Set global timeout
             self.setTimeout(timeout=1)
 
-            # lcaPut limits the maximun lenght of a string to 40 chars, as defined in the EPICS R3.14 CA reference manual.
-            # This won't allowed to use the command 'readConfig' with a long file path, which is usually the case.
-            # This function is a workaround to that problem. Fomr matlab one can just call this function without arguments
-            # an the function readConfig will be called with a predefined file passed during startup
-            self.configFile = configFile
-            self.add(pyrogue.LocalCommand(name='setDefaults', description='Set default configuration', function=self.setDefaultsCmd))
+            # lcaPut limits the maximun lenght of a string to 40 chars, as defined
+            # in the EPICS R3.14 CA reference manual. This won't allowed to use the
+            # command 'readConfig' with a long file path, which is usually the case.
+            # This function is a workaround to that problem. Fomr matlab one can 
+            # just call this function without arguments an the function readConfig 
+            # will be called with a predefined file passed during startup
+            self.ConfigFile = ConfigFile
+            self.add(pyrogue.LocalCommand(  name        = 'setDefaults', 
+                                            description = 'Set default configuration', 
+                                            function    = self.SetDefaultsCmd))
 
             # Start the root
             self.start()
@@ -170,7 +180,7 @@ class localServer(pyrogue.Root):
 
         except KeyboardInterrupt:
             print("Killing server creation...")
-            super(localServer, self).stop()
+            super(LocalServer, self).stop()
             exit()
         
         # Show image build information
@@ -181,16 +191,16 @@ class localServer(pyrogue.Root):
             print("BuildStamp              : %s"   % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.BuildStamp.get())
             print("FPGA Version            : 0x%x" % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.FpgaVersion.get())
             print("Git hash                : 0x%x" % self.FpgaTopLevel.AmcCarrierCore.AxiVersion.GitHash.get())
-        except AttributeError as ae: 
-            print("Attibute error: %s" % ae)
+        except AttributeError as AE: 
+            print("Attibute error: %s" % AE)
         except Exception as e:
             print("Unexpected exception caught while reading build information: %s" % e)
         print("")
 
         # Create EPICS server
-        print("Starting EPICS server using prefix \"%s\"" % epicsPrefix)
+        print("Starting EPICS server using prefix \"%s\"" % EpicsPrefix)
         try:
-            self.epics = pyrogue.epics.EpicsCaServer(base=epicsPrefix, root=self)
+            self.epics = pyrogue.epics.EpicsCaServer(base=EpicsPrefix, root=self)
             self.epics.start()
             print("EPICS server started. press Crtl+C to exit")
         except Exception as e:
@@ -206,64 +216,64 @@ class localServer(pyrogue.Root):
             pass
 
     # Function for setting a default configuration. 
-    def setDefaultsCmd(self):
+    def SetDefaultsCmd(self):
         # Check if a default configuration file has been defined
-        if not self.configFile:
+        if not self.ConfigFile:
             print('No default configuration file was specified...')
             return
 
-        print('Setting defaults from file %s' % self.configFile)
-        self.readConfig(self.configFile)
+        print('Setting defaults from file %s' % self.ConfigFile)
+        self.readConfig(self.ConfigFile)
 
     def stop(self):
         print("Stopping EPICS server...")
         self.epics.stop()
-        super(localServer, self).stop()
+        super(LocalServer, self).stop()
 
 
 # Main body
 def main(argv):
 
-    ipAddr      = ""
-    epicsPrefix = "pyrogue_test"
-    configFile  = ''
+    IpAddr      = ""
+    EpicsPrefix = "pyrogue_test"
+    ConfigFile  = ''
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(argv,"ha:p:d:",["help", "addr=", "prefix=", "defaults="])
+        opts, _ = getopt.getopt(argv, "ha:p:d:", ["help", "addr=", "prefix=", "defaults="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
 
     for opt, arg in opts:
-        if opt in ("-h","--help"):
+        if opt in ("-h", "--help"):
             usage(sys.argv[0])
             sys.exit()
-        elif opt in ("-a","--addr"):        # IP Address
-            ipAddr = arg
-        elif opt in ("-p","--prefix"):      # EPICS prefix
-            epicsPrefix = arg
+        elif opt in ("-a", "--addr"):        # IP Address
+            IpAddr = arg
+        elif opt in ("-p", "--prefix"):      # EPICS prefix
+            EpicsPrefix = arg
         elif opt in ("-d", "--defaults"):   # Default configuration file
-            configFile = arg
+            ConfigFile = arg
 
 
     try:
-        socket.inet_aton(ipAddr)
+        socket.inet_aton(IpAddr)
     except socket.error:
-        exitMessage("ERROR: Invalid IP Address.")
+        ExitMessage("ERROR: Invalid IP Address.")
 
     print("")
     print("Trying to ping the FPGA...")
     try:
-        FNULL = open(os.devnull, 'w')
-        subprocess.check_call(["ping", "-c2", ipAddr], stdout=FNULL, stderr=FNULL)
+        DevNull = open(os.devnull, 'w')
+        subprocess.check_call(["ping", "-c2", IpAddr], stdout=DevNull, stderr=DevNull)
         print("    FPGA is online")
         print("")
     except subprocess.CalledProcessError:
-        exitMessage("    ERROR: FPGA can't be reached!")
+        ExitMessage("    ERROR: FPGA can't be reached!")
 
     # Start pyRogue server
-    server = localServer(ipAddr, epicsPrefix, configFile)
+    server = LocalServer(IpAddr, EpicsPrefix, ConfigFile)
     
     # Stop server
     server.stop()        
