@@ -170,7 +170,7 @@ class localServer(pyrogue.Root):
 
         except KeyboardInterrupt:
             print("Killing server creation...")
-            super().stop()
+            super(localServer, self).stop()
             exit()
         
         # Show image build information
@@ -218,7 +218,7 @@ class localServer(pyrogue.Root):
     def stop(self):
         print("Stopping EPICS server...")
         self.epics.stop()
-        super().stop()
+        super(localServer, self).stop()
 
 
 # Main body
