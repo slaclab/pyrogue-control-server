@@ -128,9 +128,6 @@ class dataBuffer(rogue.interfaces.stream.Slave):
             else:
                 print("Data byte order not supported: \"%s\"" % byteOrder)
 
-def testFunction():
-    print('Test function called')        
-
 # Local server class
 class localServer(pyrogue.Root):
 
