@@ -37,9 +37,9 @@ def usage(name):
 def create_gui(root):
     # Create GUI
     app_top = PyQt4.QtGui.QApplication(sys.argv)
-    GuiTop = pyrogue.gui.GuiTop(group='GuiTop')
-    GuiTop.resize(800, 1000)
-    GuiTop.addTree(root)
+    gui_top = pyrogue.gui.gui_top(group='GuiTop')
+    gui_top.resize(800, 1000)
+    gui_top.addTree(root)
     
     print("Starting GUI...\n")
     
@@ -54,19 +54,19 @@ def get_host_name():
 
 # Remote client class
 class RemoteClient(pyrogue.PyroRoot):
-    def __init__(self, GroupName):
-        HostName = get_host_name()
+    def __init__(self, group_name):
+        host_name = get_host_name()
         try:
-            print("Creating client on %s..." % HostName)
-            self.client = pyrogue.PyroClient(group=GroupName, host=HostName)
-        except pyrogue.NodeError as NE:
-            print("Error during client creation: %s" % NE)
+            print("Creating client on %s..." % host_name)
+            self.client = pyrogue.PyroClient(group=group_name, host=host_name)
+        except pyrogue.NodeError as ne:
+            print("Error during client creation: %s" % ne)
         else:
             try:
                 print("Reading root from remote server...")
                 self = self.client.getRoot('AMCc')
-            except pyrogue.NodeError as NE:
-                print("Error reading the root from the server: %s" % NE)
+            except pyrogue.NodeError as ne:
+                print("Error reading the root from the server: %s" % ne)
                 self.client.stop()
             else:
                 create_gui(self)
@@ -74,13 +74,13 @@ class RemoteClient(pyrogue.PyroRoot):
     def __del__(self):
         try:
             self.client.stop()
-        except Exception as e:
-            print("Unexpected exception caught while destroying the RemoteClient object: %s" % e)
+        except Exception as re:
+            print("Error while destroying the remote client object: %s" % re)
 
 # Main body
 def main():
 
-    GroupName = "pyrogue_test"
+    group_name = "pyrogue_test"
 
     # Read Arguments
     try:
@@ -94,10 +94,10 @@ def main():
             usage(sys.argv[0])
             sys.exit()
         elif opt in ("-g", "--group"):       # Group name
-            GroupName = arg
+            group_name = arg
     
     # Start client
-    client = RemoteClient(GroupName)
+    client = RemoteClient(group_name)
 
     # Stop client
     del client
