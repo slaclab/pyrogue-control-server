@@ -35,7 +35,7 @@ from FpgaTopLevel import FpgaTopLevel
 # Print the usage message
 def usage(name):
     print("Usage: %s -a|--addr IP_address [-d|--defaults config_file] \
-    	[-s|--server] [-p|--pyro group_name] [-e|--epics prefix] [-h|--help]" \
+        [-s|--server] [-p|--pyro group_name] [-e|--epics prefix] [-h|--help]" \
         % name)
     print("    -h||--help                : show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
@@ -46,14 +46,14 @@ def usage(name):
     print("")
     print("Examples:")
     print("    %s -a IP_address                           : \
-    	Start a local rogue server, with GUI, without Pyro nor EPICS servers" \
-    	% name)
+        Start a local rogue server, with GUI, without Pyro nor EPICS servers" \
+        % name)
     print("    %s -a IP_address -e prefix                 : \
-    	Start a local rogue server, with GUI, with EPICS server" \
-    	% name)
+        Start a local rogue server, with GUI, with EPICS server" \
+        % name)
     print("    %s -a IP_address -e prefix -p group_name -s : \
-    	Start a local rogure server, without GUI, with Pyro and EPICS servers" \
-    	% name)
+        Start a local rogure server, without GUI, with Pyro and EPICS servers" \
+        % name)
     print("")
 
 # Cretae gui interface
@@ -198,22 +198,22 @@ class LocalServer(pyrogue.Root):
                                                            }
                                         ))
 
-			# Devices used only with an EPICS server
+            # Devices used only with an EPICS server
             if EpicsPrefix:
-            	# Add data streams (0-7) to local variables so they are expose as PVs
-	            buf = []
-	            for i in range(8):
-	                buf.append(DataBuffer(2*1024*1024))	# 2MB buffers
-	                pyrogue.streamTap(fpga.stream.application(0x80 + i), buf[i])
-	                V = pyrogue.LocalVariable(  name        = 'Stream%d' % i,
-	                                            description = 'Stream %d' % i,
-	                                            mode        = 'RO', 
-	                                            value       =  0,
-	                                            localGet    =  buf[i].GetVal, 
-	                                            update      =  False,
-	                                            hidden      =  True)
-	                self.add(V)
-	                buf[i].SetCb(V.updated)
+                # Add data streams (0-7) to local variables so they are expose as PVs
+                buf = []
+                for i in range(8):
+                    buf.append(DataBuffer(2*1024*1024)) # 2MB buffers
+                    pyrogue.streamTap(fpga.stream.application(0x80 + i), buf[i])
+                    V = pyrogue.LocalVariable(  name        = 'Stream%d' % i,
+                                                description = 'Stream %d' % i,
+                                                mode        = 'RO', 
+                                                value       =  0,
+                                                localGet    =  buf[i].GetVal, 
+                                                update      =  False,
+                                                hidden      =  True)
+                    self.add(V)
+                    buf[i].SetCb(V.updated)
 
             # lcaPut limits the maximun lenght of a string to 40 chars, as defined
             # in the EPICS R3.14 CA reference manual. This won't allowed to use the
@@ -229,12 +229,12 @@ class LocalServer(pyrogue.Root):
 
             # Start the root
             if GroupName:
-            	# Start with Pyro4 server
+                # Start with Pyro4 server
                 HostName = GetHostName()
                 print("Starting rogue server with Pyro using group name \"%s\"" % GroupName)
                 self.start(pyroGroup=GroupName, pyroHost=HostName, pyroNs=None)
             else:
-            	# Start without Pyro4 server
+                # Start without Pyro4 server
                 print("Starting rogue server")
                 self.start()
 
@@ -264,7 +264,7 @@ class LocalServer(pyrogue.Root):
 
         # Start the EPICS server
         if EpicsPrefix:
-        	print("Starting EPICS server using prefix \"%s\"" % EpicsPrefix)
+            print("Starting EPICS server using prefix \"%s\"" % EpicsPrefix)
             self.epics = pyrogue.epics.EpicsCaServer(base=EpicsPrefix, root=self)
             self.epics.start()
 
@@ -316,7 +316,7 @@ def main():
         if opt in ("-h", "--help"):
             usage(sys.argv[0])
             sys.exit()
-        elif opt in ("-a", "--addr"):		# IP Address
+        elif opt in ("-a", "--addr"):       # IP Address
             IpAddr = arg
         elif opt in ("-s", "--server"):     # Server mode
             ServerMode = True
@@ -343,14 +343,14 @@ def main():
         ExitMessage("    ERROR: FPGA can't be reached!")
 
     if ServerMode and not (GroupName or EpicsPrefix):
-    	ExitMessage("    ERROR: Can not start in server mode without Pyro or EPICS server")
+        ExitMessage("    ERROR: Can not start in server mode without Pyro or EPICS server")
 
     # Start pyRogue server
-    server = LocalServer(	IpAddr      = IpAddr, 
-    						ConfigFile  = ConfigFile, 
-    						ServerMode  = ServerMode, 
-    						GroupName   = GroupName, 
-    						EpicsPrefix = EpicsPrefix)
+    server = LocalServer(   IpAddr      = IpAddr, 
+                            ConfigFile  = ConfigFile, 
+                            ServerMode  = ServerMode, 
+                            GroupName   = GroupName, 
+                            EpicsPrefix = EpicsPrefix)
     
     # Stop server
     server.stop()        
