@@ -37,9 +37,7 @@ from FpgaTopLevel import FpgaTopLevel
 
 # Print the usage message
 def usage(name):
-    print("Usage: %s -a|--addr IP_address [-d|--defaults config_file] \
-        [-s|--server] [-p|--pyro group_name] [-e|--epics prefix] [-h|--help]" \
-        % name)
+    print("Usage: %s -a|--addr IP_address [-d|--defaults config_file] [-s|--server] [-p|--pyro group_name] [-e|--epics prefix] [-h|--help]" % name)
     print("    -h||--help                : show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
     print("    -d|--defaults config_file : Default configuration file (optional)")
@@ -48,15 +46,9 @@ def usage(name):
     print("    -s|--server               : Server mode, without staring a GUI (Must be use with -p and/or -e)")
     print("")
     print("Examples:")
-    print("    %s -a IP_address                           : \
-        Start a local rogue server, with GUI, without Pyro nor EPICS servers" \
-        % name)
-    print("    %s -a IP_address -e prefix                 : \
-        Start a local rogue server, with GUI, with EPICS server" \
-        % name)
-    print("    %s -a IP_address -e prefix -p group_name -s : \
-        Start a local rogure server, without GUI, with Pyro and EPICS servers" \
-        % name)
+    print("    %s -a IP_address                            : Start a local rogue server, with GUI, without Pyro nor EPICS servers" % name)
+    print("    %s -a IP_address -e prefix                  : Start a local rogue server, with GUI, with EPICS server" % name)
+    print("    %s -a IP_address -e prefix -p group_name -s : Start a local rogure server, without GUI, with Pyro and EPICS servers" % name)
     print("")
 
 # Cretae gui interface
