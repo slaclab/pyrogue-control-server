@@ -33,7 +33,10 @@ import PyQt4.QtGui
 import pyrogue.gui
 import pyrogue.epics
 
-from FpgaTopLevel import FpgaTopLevel
+try:
+    from FpgaTopLevel import FpgaTopLevel
+except ModuleNotFoundError:
+    pass
 
 # Print the usage message
 def usage(name):
