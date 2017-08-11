@@ -29,7 +29,7 @@ usage() {
     echo "    -a <ip_addr>        : target IP address. Not used in client mode"
     echo "    -s                  : Server Mode. It will start a Pyro server in this PC and export the root to remote client without launching a GUI."
     echo "                          An EPICS server will also be started in this mode."
-    echo "    -g <pyro_group>     : Pyro4 group name used for remote clients (default \"pyrogue_test\")"
+    echo "    -p <group_name>     : Pyro4 group name used for remote clients (default \"pyrogue_test\")"
     echo "    -e <epics_prefix>   : EPICS PV name prefix (default \"pyrogue_test\")"
     echo ""
     exit
@@ -41,31 +41,19 @@ while [[ $# -gt 0 ]]
 do
     key="$1"
     case $key in
-        -a)
-            ARGS="-a $2"
-            shift
-            ;;
         -t)
+            # Read the tarball file argument
             TAR_FILE="$2"
             shift
             ;;
-        -s)
-            ARGS="$ARGS -s"
-            ;;
-        -g)
-            ARGS="$ARGS -g $2"
-            shift
-            ;;
-        -e)
-            ARGS="$ARGS -e $2"
-            shift
-            ;;
         -h)
+            # Capture the help argument
             usage
             ;;
         *)
-            echo "Uknown option"
-            usage
+            # All other arguemnts are passed to the pyton script
+            ARGS="$ARGS $1 $2"
+            shift
             ;;
     esac
     shift
