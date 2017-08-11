@@ -18,35 +18,45 @@
 #-----------------------------------------------------------------------------
 
 SCRIPT_NAME=$0
+PYTHON_SCRIPT_NAME="./python/pyrogue_client.py"
+ROGUE_SETUP_SCRIPT="./setup_rogue.sh"
 
+# Usage message
 usage() {
     echo ""
     echo "Start a PyRogue client to communicate with a pyrogue server runing in a remote (or local) host"
+    echo "This startup bash script set the enviroinment and calls the python script $PYTHON_SCRIPT_NAME"
     echo ""
-    echo "usage: $SCRIPT_NAME [-g group_name] [-h]"
+    echo "usage: $SCRIPT_NAME [-h|--help] {extra arguments for $PYTHON_SCRIPT_NAME}"
     echo "    -h                  : Show this message"
-    echo "    -g <group_name>     : Pyro4 group name used for remote clients (default \"pyrogue_test\")"
     echo ""
+    echo "All other arguments are passed directly to $PYTHON_SCRIPT_NAME which usage is:"
+    echo ""
+    source $ROGUE_SETUP_SCRIPT
+    $PYTHON_SCRIPT_NAME -h
     exit
 }
 
-ARGS=""
+# Check if the required rogue setup script exists 
+if [ ! -f "$ROGUE_SETUP_SCRIPT" ]
+then
+    echo "$ROGUE_SETUP_SCRIPT not found!"
+    exit
+fi
 
+# Check for arguments
+ARGS=""
 while [[ $# -gt 0 ]]
 do
     key="$1"
     case $key in
-        -g)
-            ARGS="$ARGS -g $2"
-            shift
-            ;;
-        -h)
+        -h|--help)
+            # Capture the help argument
             usage
             ;;
         *)
-            # unknow option
-            echo "Uknown option"
-            usage
+            # All other arguemnts are passed to the pyton script
+            ARGS="$ARGS $1"
             ;;
     esac
     shift
@@ -55,10 +65,10 @@ done
 echo ""
 
 echo "Setting the enviroment..."
-source setup_rogue.sh
+source $ROGUE_SETUP_SCRIPT
 
 # Start the client
 echo "Starting the client..."
-CMD="./python/pyrogue_client.py $ARGS"
+CMD="$PYTHON_SCRIPT_NAME $ARGS"
 echo $CMD
 $CMD
