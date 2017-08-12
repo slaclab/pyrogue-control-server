@@ -1,6 +1,6 @@
-[![Code Health](https://landscape.io/github/slaclab/pyrogue-control-server/master/landscape.svg?style=plastic)](https://landscape.io/github/slaclab/pyrogue-control-server/master)
-
 # PyRogue General Purpose Control Server
+
+[![Code Health](https://landscape.io/github/slaclab/pyrogue-control-server/master/landscape.svg?style=plastic)](https://landscape.io/github/slaclab/pyrogue-control-server/master)
 
 ## Overview
 
