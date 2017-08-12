@@ -87,7 +87,6 @@ class data_buffer(rogue.interfaces.stream.Slave):
     """
     def __init__(self, size):
         rogue.interfaces.stream.Slave.__init__(self)
-        print('Data buffer created')
         self._buf = [0] * size
 
         # Data format: uint16, le
