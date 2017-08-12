@@ -213,7 +213,7 @@ class LocalServer(pyrogue.Root):
                         update      =  False,
                         hidden      =  True)
 
-                    self.add(local_vafr)
+                    self.add(local_var)
                     buf[i].set_cb(local_var.updated)
 
             # lcaPut limits the maximun lenght of a string to 40 chars, as defined
