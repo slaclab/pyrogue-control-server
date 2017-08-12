@@ -22,6 +22,7 @@ import socket
 import os
 import subprocess
 import time
+import struct
 
 import pyrogue
 import pyrogue.protocols
@@ -80,7 +81,7 @@ def exit_message(message):
 def get_host_name():
     return subprocess.check_output("hostname").strip().decode("utf-8")
 
-class data_buffer(rogue.interfaces.stream.Slave):
+class DataBuffer(rogue.interfaces.stream.Slave):
     """
     Data buffer class use to receive data from a stream interface and \
     copies into a local buffer using a especific format
@@ -105,8 +106,8 @@ class data_buffer(rogue.interfaces.stream.Slave):
             (len(data)//self._data_size), self._data_format), data)
         self._callback()
 
-    def set_cb(self,cb):
-        self._callback = cb
+    def set_cb(self, callback):
+        self._callback = callback
 
     def get_val(self):
         """
@@ -179,38 +180,41 @@ class LocalServer(pyrogue.Root):
 
             # Add data streams (0-7) to file channels (0-7)
             for i in range(8):
-                pyrogue.streamConnect(fpga.stream.application(0x80 + i), stm_data_writer.getChannel(i))
+                pyrogue.streamConnect(fpga.stream.application(0x80 + i),
+                                      stm_data_writer.getChannel(i))
             
             # Set global timeout
             self.setTimeout(timeout=1)
             
             # Run control for streaming interfaces
-            self.add(pyrogue.RunControl(    name        = 'streamRunControl',
-                                            description = 'Run controller',
-                                            cmd         = fpga.SwDaqMuxTrig,
-                                            rates       = {
-                                                            1:  '1 Hz', 
-                                                            10: '10 Hz', 
-                                                            30: '30 Hz'
-                                                           }
-                                        ))
+            self.add(pyrogue.RunControl(
+                name        = 'streamRunControl',
+                description = 'Run controller',
+                cmd         = fpga.SwDaqMuxTrig,
+                rates       = {
+                                1:  '1 Hz', 
+                                10: '10 Hz', 
+                                30: '30 Hz'
+                               }))
 
             # Devices used only with an EPICS server
             if epics_prefix:
                 # Add data streams (0-7) to local variables so they are expose as PVs
                 buf = []
                 for i in range(8):
-                    buf.append(data_buffer(2*1024*1024)) # 2MB buffers
+                    buf.append(DataBuffer(2*1024*1024)) # 2MB buffers
                     pyrogue.streamTap(fpga.stream.application(0x80 + i), buf[i])
-                    V = pyrogue.LocalVariable(  name        = 'Stream%d' % i,
-                                                description = 'Stream %d' % i,
-                                                mode        = 'RO', 
-                                                value       =  0,
-                                                localGet    =  buf[i].get_val, 
-                                                update      =  False,
-                                                hidden      =  True)
-                    self.add(V)
-                    buf[i].set_cb(V.updated)
+                    local_var = pyrogue.LocalVariable(
+                        name        = 'Stream%d' % i,
+                        description = 'Stream %d' % i,
+                        mode        = 'RO', 
+                        value       =  0,
+                        localGet    =  buf[i].get_val, 
+                        update      =  False,
+                        hidden      =  True)
+
+                    self.add(local_vafr)
+                    buf[i].set_cb(local_var.updated)
 
             # lcaPut limits the maximun lenght of a string to 40 chars, as defined
             # in the EPICS R3.14 CA reference manual. This won't allowed to use the
@@ -220,9 +224,10 @@ class LocalServer(pyrogue.Root):
             # will be called with a predefined file passed during startup
             # However, it can be usefull also win the GUI, so it is always added.
             self.config_file = config_file
-            self.add(pyrogue.LocalCommand(  name        = 'setDefaults', 
-                                            description = 'Set default configuration', 
-                                            function    = self.set_defaults_cmd))
+            self.add(pyrogue.LocalCommand(  
+                name        = 'setDefaults', 
+                description = 'Set default configuration', 
+                function    = self.set_defaults_cmd))
 
             # Start the root
             if group_name:
@@ -253,8 +258,8 @@ class LocalServer(pyrogue.Root):
                 self.FpgaTopLevel.AmcCarrierCore.AxiVersion.FpgaVersion.get())
             print("Git hash                : 0x%x" % \
                 self.FpgaTopLevel.AmcCarrierCore.AxiVersion.GitHash.get())
-        except AttributeError as AE: 
-            print("Attibute error: %s" % AE)
+        except AttributeError as attr_error: 
+            print("Attibute error: %s" % attr_error)
         except Exception as e:
             print("Unexpected exception caught while reading build information: %s" % e)
         print("")
@@ -304,7 +309,9 @@ def main():
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "ha:sp:e:d:", ["help", "addr=", "server", "pyro=", "epics=", "defaults="])
+        opts, _ = getopt.getopt(sys.argv[1:], 
+            "ha:sp:e:d:", 
+            ["help", "addr=", "server", "pyro=", "epics=", "defaults="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -332,8 +339,8 @@ def main():
     print("")
     print("Trying to ping the FPGA...")
     try:
-        DevNull = open(os.devnull, 'w')
-        subprocess.check_call(["ping", "-c2", ip_addr], stdout=DevNull, stderr=DevNull)
+        dev_null = open(os.devnull, 'w')
+        subprocess.check_call(["ping", "-c2", ip_addr], stdout=dev_null, stderr=dev_null)
         print("    FPGA is online")
         print("")
     except subprocess.CalledProcessError:
@@ -343,11 +350,12 @@ def main():
         exit_message("    ERROR: Can not start in server mode without Pyro or EPICS server")
 
     # Start pyRogue server
-    server = LocalServer(   ip_addr      = ip_addr, 
-                            config_file  = config_file, 
-                            server_mode  = server_mode, 
-                            group_name   = group_name, 
-                            epics_prefix = epics_prefix)
+    server = LocalServer(   
+        ip_addr      = ip_addr, 
+        config_file  = config_file, 
+        server_mode  = server_mode, 
+        group_name   = group_name, 
+        epics_prefix = epics_prefix)
     
     # Stop server
     server.stop()        
