@@ -25,22 +25,33 @@ import time
 
 import pyrogue
 import pyrogue.protocols
+import rogue.protocols.srp
+import rogue.protocols.udp
 import pyrogue.utilities.fileio
+import rogue.interfaces.stream
 import PyQt4.QtGui
 import pyrogue.gui
 import pyrogue.epics
 
-from FpgaTopLevel import FpgaTopLevel
+try:
+    from FpgaTopLevel import FpgaTopLevel
+except ModuleNotFoundError:
+    pass
 
 # Print the usage message
 def usage(name):
-    print("Usage: %s -a|--addr IP_address [-s|--server] \
-        [-g|--group group_name] [-h|--help]" % name)
+    print("Usage: %s -a|--addr IP_address [-d|--defaults config_file] [-s|--server] [-p|--pyro group_name] [-e|--epics prefix] [-h|--help]" % name)
     print("    -h||--help                : show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
-    print("    -s|--server               : Start only the Pyro and EPICS servers (without GUI)")
-    print("    -g|--group group_name     : Pyro4 group name. Default = \"pyrogue_test\"")
-    print("    -e|--epics prefix         : EPICS PV name prefix. Default = \"pyrogue_test\"")
+    print("    -d|--defaults config_file : Default configuration file (optional)")
+    print("    -p|--pyro group_name      : Start a Pyro4 server with group name \"group_name\"")
+    print("    -e|--epics prefix         : Start an EPICS server with PV name prefix \"prefix\"")
+    print("    -s|--server               : Server mode, without staring a GUI (Must be use with -p and/or -e)")
+    print("")
+    print("Examples:")
+    print("    %s -a IP_address                            : Start a local rogue server, with GUI, without Pyro nor EPICS servers" % name)
+    print("    %s -a IP_address -e prefix                  : Start a local rogue server, with GUI, with EPICS server" % name)
+    print("    %s -a IP_address -e prefix -p group_name -s : Start a local rogure server, without GUI, with Pyro and EPICS servers" % name)
     print("")
 
 # Cretae gui interface
@@ -69,10 +80,90 @@ def ExitMessage(message):
 def GetHostName():
     return subprocess.check_output("hostname").strip().decode("utf-8")
 
+class DataBuffer(rogue.interfaces.stream.Slave):
+    """
+    Data buffer class use to receive data from a stream interface and \
+    copies into a local buffer using a especific format
+    """
+    def __init__(self, size):
+        rogue.interfaces.stream.Slave.__init__(self)
+        print('Data buffer created')
+        self._buf = [0] * size
+
+        # Data format: uint16, le
+        self._DataByteOrder = '<'        
+        self._DataFormat    = 'h'
+        self._DataSize      = 2
+        self._callback      = lambda: None
+
+    def _acceptFrame(self, frame):
+        """
+        This method is called when a stream frame is received
+        """
+        data = bytearray(frame.getPayload())
+        frame.read(data, 0)
+        self._buf = struct.unpack('%s%d%s' % (self._DataByteOrder, \
+            (len(data)//self._DataSize), self._DataFormat), data)
+        self._callback()
+
+    def SetCb(self,cb):
+        self._callback = cb
+
+    def GetVal(self):
+        """
+        Function to read the data buffer
+        """
+        return self._buf
+
+    def SetDataFormat(self, FormatString):
+        """
+        Set data transformation format from war bytes.
+        FormatString must constain in this order:
+          - a character describing the byte order (optional)
+            * '<' : litle-endian
+            * '>' : big-endian
+          - a character describing the data format (optional)
+            * 'B' : unsigned 8-bit values
+            * 'b' : signed 8-bit values
+            * 'H' : unsigned 16-bit values
+            * 'h' : signed 16-bit values
+            * 'I' : unsigned 32-bit values
+            * 'i' : signed 32-bit values
+          Examples: '>H', '<', 'I'
+        """
+
+        if len(FormatString) == 2:
+            DataFormat = FormatString[1]
+            ByteOrder  = FormatString[0]
+        else:
+            if FormatString[0].isalpha():
+                DataFormat = FormatString[0]
+            else:
+                ByteOrder = FormatString[0]
+
+        if 'DataFormat' in locals():
+            if DataFormat == 'B' or DataFormat == 'b':      # uint8, int8
+                self._DataFormat = DataFormat
+                self._DataSize = 1
+            if DataFormat == 'H' or  DataFormat == 'h':     # uint16, int16
+                self._DataFormat = DataFormat
+                self._DataSize = 2
+            elif DataFormat == 'I' or DataFormat == 'i':    # uint32, int32
+                self._DataFormat = DataFormat
+                self._DataSize = 4
+            else:
+                print("Data format not supported: \"%s\"" % DataFormat)
+        
+        if 'ByteOrder' in locals():
+            if ByteOrder == '<' or ByteOrder == '>':        # le, be
+                self._DataByteOrder = ByteOrder
+            else:
+                print("Data byte order not supported: \"%s\"" % ByteOrder)
+
 # Local server class
 class LocalServer(pyrogue.Root):
 
-    def __init__(self, IpAddr, ServerMode, GroupName, EpicsPrefix):
+    def __init__(self, IpAddr, ConfigFile, ServerMode, GroupName, EpicsPrefix):
 
         try:       
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
@@ -90,7 +181,7 @@ class LocalServer(pyrogue.Root):
             # Add data streams (0-7) to file channels (0-7)
             for i in range(8):
                 pyrogue.streamConnect(fpga.stream.application(0x80 + i), StmDataWriter.getChannel(i))
-               
+            
             # Set global timeout
             self.setTimeout(timeout=1)
             
@@ -105,12 +196,43 @@ class LocalServer(pyrogue.Root):
                                                            }
                                         ))
 
+            # Devices used only with an EPICS server
+            if EpicsPrefix:
+                # Add data streams (0-7) to local variables so they are expose as PVs
+                buf = []
+                for i in range(8):
+                    buf.append(DataBuffer(2*1024*1024)) # 2MB buffers
+                    pyrogue.streamTap(fpga.stream.application(0x80 + i), buf[i])
+                    V = pyrogue.LocalVariable(  name        = 'Stream%d' % i,
+                                                description = 'Stream %d' % i,
+                                                mode        = 'RO', 
+                                                value       =  0,
+                                                localGet    =  buf[i].GetVal, 
+                                                update      =  False,
+                                                hidden      =  True)
+                    self.add(V)
+                    buf[i].SetCb(V.updated)
+
+            # lcaPut limits the maximun lenght of a string to 40 chars, as defined
+            # in the EPICS R3.14 CA reference manual. This won't allowed to use the
+            # command 'readConfig' with a long file path, which is usually the case.
+            # This function is a workaround to that problem. Fomr matlab one can 
+            # just call this function without arguments an the function readConfig 
+            # will be called with a predefined file passed during startup
+            # However, it can be usefull also win the GUI, so it is always added.
+            self.ConfigFile = ConfigFile
+            self.add(pyrogue.LocalCommand(  name        = 'setDefaults', 
+                                            description = 'Set default configuration', 
+                                            function    = self.SetDefaultsCmd))
+
             # Start the root
-            if ServerMode:
+            if GroupName:
+                # Start with Pyro4 server
                 HostName = GetHostName()
                 print("Starting rogue server with Pyro using group name \"%s\"" % GroupName)
                 self.start(pyroGroup=GroupName, pyroHost=HostName, pyroNs=None)
             else:
+                # Start without Pyro4 server
                 print("Starting rogue server")
                 self.start()
 
@@ -138,15 +260,16 @@ class LocalServer(pyrogue.Root):
             print("Unexpected exception caught while reading build information: %s" % e)
         print("")
 
-        # If no in server Mode, start the GUI
-        if not ServerMode:
-            CreateGui(self)
-        else:
-            # Create EPICS server
+        # Start the EPICS server
+        if EpicsPrefix:
             print("Starting EPICS server using prefix \"%s\"" % EpicsPrefix)
             self.epics = pyrogue.epics.EpicsCaServer(base=EpicsPrefix, root=self)
             self.epics.start()
 
+        # If no in server Mode, start the GUI
+        if not ServerMode:
+            CreateGui(self)
+        else:
             # Stop the server when Crtl+C is pressed
             try:
                 # Wait for Ctrl+C
@@ -154,6 +277,16 @@ class LocalServer(pyrogue.Root):
                     time.sleep(1)           
             except KeyboardInterrupt:
                 pass
+
+    # Function for setting a default configuration. 
+    def SetDefaultsCmd(self):
+        # Check if a default configuration file has been defined
+        if not self.ConfigFile:
+            print('No default configuration file was specified...')
+            return
+
+        print('Setting defaults from file %s' % self.ConfigFile)
+        self.readConfig(self.ConfigFile)
 
     def stop(self):
         print("Stopping servers...")
@@ -164,15 +297,15 @@ class LocalServer(pyrogue.Root):
 
 # Main body
 def main():
-
     IpAddr      = ""
-    GroupName   = "pyrogue_test"
-    EpicsPrefix = "pyrogue_test"
+    GroupName   = ""
+    EpicsPrefix = ""
+    ConfigFile  = ""
     ServerMode  = False
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "ha:sg:e:", ["help", "addr=", "server", "group=", "epics="])
+        opts, _ = getopt.getopt(sys.argv[1:], "ha:sp:e:d:", ["help", "addr=", "server", "pyro=", "epics=", "defaults="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -181,15 +314,16 @@ def main():
         if opt in ("-h", "--help"):
             usage(sys.argv[0])
             sys.exit()
-        elif opt in ("-a", "--addr"):        # IP Address
+        elif opt in ("-a", "--addr"):       # IP Address
             IpAddr = arg
-        elif opt in ("-s", "--server"):      # Server mode
+        elif opt in ("-s", "--server"):     # Server mode
             ServerMode = True
-        elif opt in ("-g", "--group"):       # Group name
+        elif opt in ("-p", "--pyro"):       # Pyro group name
             GroupName = arg
-        elif opt in ("-e", "--epics"):       # EPICS prefix
+        elif opt in ("-e", "--epics"):      # EPICS prefix
             EpicsPrefix = arg
-
+        elif opt in ("-d", "--defaults"):   # Default configuration file
+            ConfigFile = arg
 
     try:
         socket.inet_aton(IpAddr)
@@ -206,8 +340,15 @@ def main():
     except subprocess.CalledProcessError:
         ExitMessage("    ERROR: FPGA can't be reached!")
 
+    if ServerMode and not (GroupName or EpicsPrefix):
+        ExitMessage("    ERROR: Can not start in server mode without Pyro or EPICS server")
+
     # Start pyRogue server
-    server = LocalServer(IpAddr, ServerMode, GroupName, EpicsPrefix)
+    server = LocalServer(   IpAddr      = IpAddr, 
+                            ConfigFile  = ConfigFile, 
+                            ServerMode  = ServerMode, 
+                            GroupName   = GroupName, 
+                            EpicsPrefix = EpicsPrefix)
     
     # Stop server
     server.stop()        

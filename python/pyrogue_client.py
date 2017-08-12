@@ -28,9 +28,9 @@ import pyrogue.gui
 
 # Print the usage message
 def usage(name):
-    print("Usage: %s [-g|--group group_name] [-h|--help]" % name)
-    print("    -h||--help                : show this message")
-    print("    -g|--group group_name     : Pyro4 group name. Default = \"pyrogue_test\"")
+    print("Usage: %s -p|--pyro group_name [-h|--help]" % name)
+    print("    -h||--help               : show this message")
+    print("    -p|--pyro group_name     : Pyro4 group name")
     print("")
 
 # Cretae gui interface
@@ -80,11 +80,11 @@ class RemoteClient(pyrogue.PyroRoot):
 # Main body
 def main():
 
-    group_name = "pyrogue_test"
+    group_name = ""
 
     # Read Arguments
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "hg:", ["help", "group="])
+        opts, _ = getopt.getopt(sys.argv[1:], "hp:", ["help", "pyro="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -93,9 +93,15 @@ def main():
         if opt in ("-h", "--help"):
             usage(sys.argv[0])
             sys.exit()
-        elif opt in ("-g", "--group"):       # Group name
+        elif opt in ("-p", "--pyro"):       # Group name
             group_name = arg
     
+    # Chek if pyro group name was defined
+    if not group_name:
+        print("    ERROR: Must especify a pyro group name")
+        print("")
+        exit()
+
     # Start client
     client = RemoteClient(group_name)
 

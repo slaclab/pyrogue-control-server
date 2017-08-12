@@ -17,55 +17,62 @@
 # contained in the LICENSE.txt file.
 #-----------------------------------------------------------------------------
 
+# File name definitions
 SCRIPT_NAME=$0
+PYTHON_SCRIPT_NAME="./python/pyrogue_server.py"
+ROGUE_SETUP_SCRIPT="./setup_rogue.sh"
+EPICS_SETUP_SCRIPT="./setup_epics.sh"
 
+# Usage message
 usage() {
     echo ""
     echo "Start a PyRogue server to communicate with an FPGA."
+    echo "This startup bash script set the enviroinment and calls the python script $PYTHON_SCRIPT_NAME"
     echo ""
-    echo "usage: $SCRIPT_NAME -t <pyrogue.tar.gz> -a <ip_addr> [-s] [-g group_name] [-h]"
-    echo "    -h                  : Show this message"
-    echo "    -t <pyrogue.tar.gz> : tarball file with pyrogue definitions."
-    echo "    -a <ip_addr>        : target IP address. Not used in client mode"
-    echo "    -s                  : Server Mode. It will start a Pyro server in this PC and export the root to remote client without launching a GUI."
-    echo "                          An EPICS server will also be started in this mode."
-    echo "    -g <pyro_group>     : Pyro4 group name used for remote clients (default \"pyrogue_test\")"
-    echo "    -e <epics_prefix>   : EPICS PV name prefix (default \"pyrogue_test\")"
+    echo "Usage: $SCRIPT_NAME -t|--tar <pyrogue.tar.gz> [-h|--help] {extra arguments for $PYTHON_SCRIPT_NAME}"
+    echo "    -t|--tar <pyrogue.tar.gz> : tarball file with pyrogue definitions."
+    echo "    -h|--help                 : Show this message"
     echo ""
+    echo "All other arguments are passed directly to $PYTHON_SCRIPT_NAME which usage is:"
+    echo ""
+    source $ROGUE_SETUP_SCRIPT
+    $PYTHON_SCRIPT_NAME -h
     exit
 }
 
-ARGS=""
+# Check if the required rogue setup script exists 
+if [ ! -f "$ROGUE_SETUP_SCRIPT" ]
+then
+    echo "$ROGUE_SETUP_SCRIPT not found!"
+    exit
+fi
 
+# Check if the required epics setup script exists 
+if [ ! -f "$EPICS_SETUP_SCRIPT" ]
+then
+    echo "$EPICS_SETUP_SCRIPT not found!"
+    exit
+fi
+
+# Check for arguments
+ARGS=""
 while [[ $# -gt 0 ]]
 do
     key="$1"
     case $key in
-        -a)
-            ARGS="-a $2"
-            shift
-            ;;
-        -t)
+        -t|--tar)
+            # Read the tarball file argument
             TAR_FILE="$2"
             shift
             ;;
-        -s)
-            ARGS="$ARGS -s"
-            ;;
-        -g)
-            ARGS="$ARGS -g $2"
-            shift
-            ;;
-        -e)
-            ARGS="$ARGS -e $2"
-            shift
-            ;;
-        -h)
+        -h|--help)
+            # Capture the help argument
             usage
             ;;
         *)
-            echo "Uknown option"
-            usage
+            # All other arguemnts are passed to the pyton script
+            ARGS="$ARGS $1"
+            #shift
             ;;
     esac
     shift
@@ -77,7 +84,7 @@ echo ""
 if [ ! -f "$TAR_FILE" ]
 then
     echo "Tar file not found!"
-    usage
+    exit
 fi
 
 # Untar the pyrogue definitions
@@ -94,13 +101,15 @@ echo "Project name = $PROJ"
 echo "PyRogue directory = $DIR"
 
 # Setup the enviroment 
+echo ""
 echo "Setting the enviroment..."
-source setup_epics.sh
-source setup_rogue.sh
+source $EPICS_SETUP_SCRIPT
+source $ROGUE_SETUP_SCRIPT
 export PYTHONPATH=$PYTHONPATH:$DIR/python
 
 # Start the server
+echo ""
 echo "Starting the server..."
-CMD="./python/pyrogue_server.py $ARGS"
+CMD="$PYTHON_SCRIPT_NAME $ARGS"
 echo $CMD
 $CMD
