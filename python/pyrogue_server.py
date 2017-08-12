@@ -101,9 +101,9 @@ class DataBuffer(rogue.interfaces.stream.Slave):
 
         # Data format: uint16, le
         self._data_byte_order = '<'        
-        self._data_format     = 'h'
-        self._data_size       = 2
-        self._callback        = lambda: None
+        self._data_format = 'h'
+        self._data_size = 2
+        self._callback = lambda: None
 
     def _acceptFrame(self, frame):
         """
@@ -143,7 +143,7 @@ class DataBuffer(rogue.interfaces.stream.Slave):
 
         if len(format_string) == 2:
             data_format = format_string[1]
-            byte_order  = format_string[0]
+            byte_order = format_string[0]
         else:
             if format_string[0].isalpha():
                 data_format = format_string[0]
@@ -197,14 +197,13 @@ class LocalServer(pyrogue.Root):
             
             # Run control for streaming interfaces
             self.add(pyrogue.RunControl(
-                name        = 'streamRunControl',
-                description = 'Run controller',
-                cmd         = fpga.SwDaqMuxTrig,
-                rates       = {
-                                1:  '1 Hz', 
-                                10: '10 Hz', 
-                                30: '30 Hz'
-                               }))
+                name='streamRunControl',
+                description='Run controller',
+                cmd=fpga.SwDaqMuxTrig,
+                rates={
+                    1:  '1 Hz', 
+                    10: '10 Hz', 
+                    30: '30 Hz'}))
 
             # Devices used only with an EPICS server
             if epics_prefix:
@@ -214,13 +213,13 @@ class LocalServer(pyrogue.Root):
                     buf.append(DataBuffer(2*1024*1024)) # 2MB buffers
                     pyrogue.streamTap(fpga.stream.application(0x80 + i), buf[i])
                     local_var = pyrogue.LocalVariable(
-                        name        = 'Stream%d' % i,
-                        description = 'Stream %d' % i,
-                        mode        = 'RO', 
-                        value       =  0,
-                        localGet    =  buf[i].get_val, 
-                        update      =  False,
-                        hidden      =  True)
+                        name='Stream%d' % i,
+                        description='Stream %d' % i,
+                        mode='RO', 
+                        value=0,
+                        localGet=buf[i].get_val, 
+                        update=False,
+                        hidden=True)
 
                     self.add(local_var)
                     buf[i].set_cb(local_var.updated)
@@ -234,9 +233,9 @@ class LocalServer(pyrogue.Root):
             # However, it can be usefull also win the GUI, so it is always added.
             self.config_file = config_file
             self.add(pyrogue.LocalCommand(  
-                name        = 'setDefaults', 
-                description = 'Set default configuration', 
-                function    = self.set_defaults_cmd))
+                name='setDefaults', 
+                description='Set default configuration', 
+                function=self.set_defaults_cmd))
 
             # Start the root
             if group_name:
@@ -308,11 +307,11 @@ class LocalServer(pyrogue.Root):
 
 # Main body
 def main():
-    ip_addr      = ""
-    group_name   = ""
+    ip_addr = ""
+    group_name = ""
     epics_prefix = ""
-    config_file  = ""
-    server_mode  = False
+    config_file = ""
+    server_mode = False
 
     # Read Arguments
     try:
@@ -358,11 +357,11 @@ def main():
 
     # Start pyRogue server
     server = LocalServer(   
-        ip_addr      = ip_addr, 
-        config_file  = config_file, 
-        server_mode  = server_mode, 
-        group_name   = group_name, 
-        epics_prefix = epics_prefix)
+        ip_addr=ip_addr, 
+        config_file=config_file, 
+        server_mode=server_mode, 
+        group_name=group_name, 
+        epics_prefix=epics_prefix)
     
     # Stop server
     server.stop()        
