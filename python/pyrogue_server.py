@@ -260,8 +260,6 @@ class LocalServer(pyrogue.Root):
                 self.FpgaTopLevel.AmcCarrierCore.AxiVersion.GitHash.get())
         except AttributeError as attr_error: 
             print("Attibute error: %s" % attr_error)
-        except Exception as e:
-            print("Unexpected exception caught while reading build information: %s" % e)
         print("")
 
         # Start the EPICS server
