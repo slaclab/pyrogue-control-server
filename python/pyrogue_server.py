@@ -41,9 +41,9 @@ except ImportError:
 
 # Print the usage message
 def usage(name):
-    print("Usage: %s -a|--addr IP_address [-d|--defaults config_file]",\
+    print("Usage: %s -a|--addr IP_address [-d|--defaults config_file]" % name,\
         " [-s|--server] [-p|--pyro group_name] [-e|--epics prefix]",\
-        " [-h|--help]" % name)
+        " [-h|--help]")
     print("    -h||--help                : show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
     print("    -d|--defaults config_file : Default configuration file",\
@@ -56,12 +56,12 @@ def usage(name):
         " a GUI (Must be use with -p and/or -e)")
     print("")
     print("Examples:")
-    print("    %s -a IP_address                            :",\
-        " Start a local rogue server, with GUI, without Pyro nor EPICS servers" % name)
-    print("    %s -a IP_address -e prefix                  :",\
-        " Start a local rogue server, with GUI, with EPICS server" % name)
-    print("    %s -a IP_address -e prefix -p group_name -s :",\
-        " Start a local rogure server, without GUI, with Pyro and EPICS servers" % name)
+    print("    %s -a IP_address                            :" % name,\
+        " Start a local rogue server, with GUI, without Pyro nor EPICS servers")
+    print("    %s -a IP_address -e prefix                  :" % name,\
+        " Start a local rogue server, with GUI, with EPICS server")
+    print("    %s -a IP_address -e prefix -p group_name -s :" % name,\
+        " Start a local rogure server, without GUI, with Pyro and EPICS servers")
     print("")
 
 # Cretae gui interface
