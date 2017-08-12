@@ -36,7 +36,7 @@ import pyrogue.epics
 
 try:
     from FpgaTopLevel import FpgaTopLevel
-except ModuleNotFoundError:
+except ImportError:
     pass
 
 # Print the usage message
