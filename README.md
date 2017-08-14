@@ -81,7 +81,6 @@ The eight streams are connected to data writers, so data sis written to disk.
 
 In order to run this software, you need:
 - Python v3
-- An instance of Rogue: its location is defined in the bash startup scripts.
-
-
-
+- An instance of Rogue. A setup script called "setup_rogue.sh" must be provided at the top level, which sources the rogue's enviroment.
+- An instance if EPICS. A setup script called "setup_epics.sh" must be provided at the top level, which sources the EPICS's enviroment.
+- An instance of labCA. A setup script called "setup_labca.sh" must be provided at the top level, which updates LD_LIBRARY_PATH accordingly.
