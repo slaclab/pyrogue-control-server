@@ -248,7 +248,7 @@ class LocalServer(pyrogue.Root):
                 print("Starting rogue server")
                 self.start()
 
-            self.readAll()
+            self.ReadAll()
 
         except KeyboardInterrupt:
             print("Killing server creation...")
