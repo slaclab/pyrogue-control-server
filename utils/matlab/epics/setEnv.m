@@ -18,7 +18,7 @@ function setEnv(prefix)
     % Global variables which will be visible inside other functions
     global PVNamePrefix
     global DMIndex
-    global readAllPV
+    global ReadAllPV
     global setDefaulstPV              
     global buildStampPV           
     global gitHashPV
@@ -41,7 +41,7 @@ function setEnv(prefix)
     DMIndex = 0;
     
     % Setup PVs
-    readAllPV              = [PVNamePrefix ':AMCc:readAll'];
+    ReadAllPV              = [PVNamePrefix ':AMCc:ReadAll'];
     setDefaulstPV          = [PVNamePrefix ':AMCc:setDefaults'];
     buildStampPV           = [PVNamePrefix ':AMCc:FpgaTopLevel:AmcCarrierCore:AxiVersion:BuildStamp'];
     gitHashPV              = [PVNamePrefix ':AMCc:FpgaTopLevel:AmcCarrierCore:AxiVersion:GitHash'];
@@ -74,13 +74,13 @@ function setEnv(prefix)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % Send read All command
-    readAll
+    ReadAll
 
     % Set default configuration
     setDefaults
 
-    % Send readAll command
-    readAll
+    % Send ReadAll command
+    ReadAll
 
     % Print Build information
     disp('Firmware image information:')
