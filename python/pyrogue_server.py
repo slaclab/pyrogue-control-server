@@ -226,9 +226,9 @@ class LocalServer(pyrogue.Root):
 
             # lcaPut limits the maximun lenght of a string to 40 chars, as defined
             # in the EPICS R3.14 CA reference manual. This won't allowed to use the
-            # command 'readConfig' with a long file path, which is usually the case.
+            # command 'ReadConfig' with a long file path, which is usually the case.
             # This function is a workaround to that problem. Fomr matlab one can 
-            # just call this function without arguments an the function readConfig 
+            # just call this function without arguments an the function ReadConfig 
             # will be called with a predefined file passed during startup
             # However, it can be usefull also win the GUI, so it is always added.
             self.config_file = config_file
@@ -296,7 +296,7 @@ class LocalServer(pyrogue.Root):
             return
 
         print('Setting defaults from file %s' % self.config_file)
-        self.readConfig(self.config_file)
+        self.ReadConfig(self.config_file)
 
     def stop(self):
         print("Stopping servers...")
