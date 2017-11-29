@@ -99,6 +99,19 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         rogue.interfaces.stream.Slave.__init__(self)
         self._buf = [0] * size
 
+        # Supported data foramt and byte order
+        self._data_format_dict = {
+            'B': 'unsigned 8-bit',
+            'b': 'signed 8-bit', 
+            'H': 'unsigned 16-bit', 
+            'h': 'signed 16-bit', 
+            'I': 'unsigned 32-bit', 
+            'i': 'signed 32-bit'}
+        
+        self._data_byte_order_dict = {
+            '<': 'little-endian', 
+            '>': 'big-endian'}
+
         # Data format: uint16, le
         self._data_byte_order = '<'        
         self._data_format = 'h'
@@ -116,6 +129,9 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         self._callback()
 
     def set_cb(self, callback):
+        """
+        Function to set the callback function
+        """
         self._callback = callback
 
     def get_val(self):
@@ -124,12 +140,12 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         """
         return self._buf
 
-    def set_data_format(self, format_string):
+    def set_data_format_string(self, format_string):
         """
-        Set data transformation format from war bytes.
+        Set data transformation format from var bytes.
         format_string must constain in this order:
           - a character describing the byte order (optional)
-            * '<' : litle-endian
+            * '<' : little-endian
             * '>' : big-endian
           - a character describing the data format (optional)
             * 'B' : unsigned 8-bit values
@@ -168,6 +184,38 @@ class DataBuffer(rogue.interfaces.stream.Slave):
                 self._data_byte_order = byte_order
             else:
                 print("Data byte order not supported: \"%s\"" % byte_order)
+
+    def get_data_format_string(self):
+        """
+        Function to get the current format string
+        """
+        return '%s%s' % (self._data_byte_order, self._data_format)
+
+    def get_data_format_list(self):
+        """
+        Function to get a list of supported data formats
+        """
+        return list(self._data_format_dict.values())
+
+    def get_data_byte_order_list(self):
+        """
+        Function to get a list of supported data byte order options
+        """
+        return list(self._data_byte_order_dict.values())
+
+    def set_data_format(self, dev, var, value):
+        """
+        Function to set the data format
+        """
+        if (value < len(self._data_format_dict)):
+            self._data_format = list(self._data_format_dict)[value]
+
+    def set_data_byte_order(self, dev, var, value):
+        """
+        Function to set the data byte order
+        """
+        if (value < len(self._data_byte_order_dict)):
+            self._data_byte_order = list(self._data_byte_order_dict)[value]
 
 # Local server class
 class LocalServer(pyrogue.Root):
@@ -208,11 +256,14 @@ class LocalServer(pyrogue.Root):
             # Devices used only with an EPICS server
             if epics_prefix:
                 # Add data streams (0-7) to local variables so they are expose as PVs
+                # Also add PVs to select the data format
                 buf = []
                 for i in range(8):
                     buf.append(DataBuffer(2*1024*1024)) # 2MB buffers
                     pyrogue.streamTap(fpga.stream.application(0x80 + i), buf[i])
-                    local_var = pyrogue.LocalVariable(
+
+                    # Variable to read the stream data
+                    stream_var = pyrogue.LocalVariable(
                         name='Stream%d' % i,
                         description='Stream %d' % i,
                         mode='RO', 
@@ -221,8 +272,48 @@ class LocalServer(pyrogue.Root):
                         update=False,
                         hidden=True)
 
-                    self.add(local_var)
-                    buf[i].set_cb(local_var.updated)
+                    # Set the buffer callback to update the variable
+                    buf[i].set_cb(stream_var.updated)
+
+                    # Variable to set the data format
+                    data_format_var = pyrogue.LocalVariable(
+                    	name='StreamDataFormat%d' % i,
+                    	description='Type of data being unpacked',
+                        mode='RW',
+                        value=0,
+                        enum={i:j for i,j in enumerate(buf[i].get_data_format_list())},
+                        localSet=buf[i].set_data_format,
+                        hidden=True)
+                    
+                    # Variable to set the data byte order
+                    byte_order_var = pyrogue.LocalVariable(
+                        name='StreamDataByteOrder%d' % i,
+                        description='Byte order of data being unpacked',
+                        mode='RW',
+                        value=0,
+                        enum={i:j for i,j in enumerate(buf[i].get_data_byte_order_list())},
+                        localSet=buf[i].set_data_byte_order,
+                        hidden=True)
+
+                    # Variable to read the data format string
+                    format_string_var = pyrogue.LocalVariable(
+                        name='StreamDataFormatString%d' % i,
+                        description='Format string used to unpack the data',
+                        mode='RO',
+                        value=0,
+                        localGet=buf[i].get_data_format_string,
+                        hidden=True)
+
+                    # Add listener to update the format string readback variable
+                    # when the data format or data byte order is changed
+                    data_format_var.addListener(format_string_var)
+                    byte_order_var.addListener(format_string_var)
+
+                    # Add the local variable to self
+                    self.add(stream_var)
+                    self.add(data_format_var)
+                    self.add(byte_order_var)
+                    self.add(format_string_var)
 
             # lcaPut limits the maximun lenght of a string to 40 chars, as defined
             # in the EPICS R3.14 CA reference manual. This won't allowed to use the
