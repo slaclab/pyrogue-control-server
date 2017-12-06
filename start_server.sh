@@ -19,9 +19,10 @@
 
 # File name definitions
 SCRIPT_NAME=$0
-PYTHON_SCRIPT_NAME="./python/pyrogue_server.py"
-ROGUE_SETUP_SCRIPT="./setup_rogue.sh"
-EPICS_SETUP_SCRIPT="./setup_epics.sh"
+TOP=$(dirname -- "$(readlink -f $0)")
+PYTHON_SCRIPT_NAME=$TOP/python/pyrogue_server.py
+ROGUE_SETUP_SCRIPT=$TOP/setup_rogue.sh
+EPICS_SETUP_SCRIPT=$TOP/setup_epics.sh
 
 # Usage message
 usage() {
