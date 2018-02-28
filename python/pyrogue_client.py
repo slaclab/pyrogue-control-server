@@ -8,12 +8,12 @@
 # Description:
 # Python script to start a PyRogue Control Client
 #-----------------------------------------------------------------------------
-# This file is part of the pyrogue-control-server software platform. It is subject to 
-# the license terms in the LICENSE.txt file found in the top-level directory 
-# of this distribution and at: 
-#    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html. 
-# No part of the rogue software platform, including this file, may be 
-# copied, modified, propagated, or distributed except according to the terms 
+# This file is part of the pyrogue-control-server software platform. It is subject to
+# the license terms in the LICENSE.txt file found in the top-level directory
+# of this distribution and at:
+#    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
+# No part of the rogue software platform, including this file, may be
+# copied, modified, propagated, or distributed except according to the terms
 # contained in the LICENSE.txt file.
 #-----------------------------------------------------------------------------
 import sys
@@ -40,9 +40,9 @@ def create_gui(root):
     gui_top = pyrogue.gui.GuiTop(group='GuiTop')
     gui_top.resize(800, 1000)
     gui_top.addTree(root)
-    
+
     print("Starting GUI...\n")
-    
+
     # Run GUI
     app_top.exec_()
 
@@ -95,7 +95,7 @@ def main():
             sys.exit()
         elif opt in ("-p", "--pyro"):       # Group name
             group_name = arg
-    
+
     # Chek if pyro group name was defined
     if not group_name:
         print("    ERROR: Must especify a pyro group name")
@@ -107,7 +107,7 @@ def main():
 
     # Stop client
     del client
-    
+
     print("")
 
 if __name__ == "__main__":
