@@ -54,6 +54,7 @@ def usage(name):
         " PV name prefix \"prefix\"")
     print("    -s|--server               : Server mode, without staring",\
         " a GUI (Must be use with -p and/or -e)")
+    print("    -n|--nopoll               : Disable all polling")
     print("")
     print("Examples:")
     print("    %s -a IP_address                            :" % name,\
@@ -220,7 +221,7 @@ class DataBuffer(rogue.interfaces.stream.Slave):
 # Local server class
 class LocalServer(pyrogue.Root):
 
-    def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix):
+    def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix, polling_en):
 
         try:
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
@@ -333,11 +334,11 @@ class LocalServer(pyrogue.Root):
                 # Start with Pyro4 server
                 host_name = get_host_name()
                 print("Starting rogue server with Pyro using group name \"%s\"" % group_name)
-                self.start(pyroGroup=group_name, pyroHost=host_name, pyroNs=None)
+                self.start(pollEn=polling_en, pyroGroup=group_name, pyroHost=host_name, pyroNs=None)
             else:
                 # Start without Pyro4 server
                 print("Starting rogue server")
-                self.start(pollEn=False)
+                self.start(pollEn=polling_en)
 
             self.ReadAll()
 
@@ -403,12 +404,13 @@ def main():
     epics_prefix = ""
     config_file = ""
     server_mode = False
+    polling_en = True
 
     # Read Arguments
     try:
         opts, _ = getopt.getopt(sys.argv[1:],
-            "ha:sp:e:d:",
-            ["help", "addr=", "server", "pyro=", "epics=", "defaults="])
+            "ha:sp:e:d:n",
+            ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll"])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -425,6 +427,8 @@ def main():
             group_name = arg
         elif opt in ("-e", "--epics"):      # EPICS prefix
             epics_prefix = arg
+        elif opt in ("-n", "--nopoll"):     # Disable all polling
+            polling_en = False
         elif opt in ("-d", "--defaults"):   # Default configuration file
             config_file = arg
 
@@ -452,7 +456,8 @@ def main():
         config_file=config_file,
         server_mode=server_mode,
         group_name=group_name,
-        epics_prefix=epics_prefix)
+        epics_prefix=epics_prefix,
+        polling_en=polling_en)
 
     # Stop server
     server.stop()
