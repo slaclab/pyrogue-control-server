@@ -93,8 +93,8 @@ def get_host_name():
 
 class DataBuffer(rogue.interfaces.stream.Slave):
     """
-    Data buffer class use to receive data from a stream interface and \
-    copies into a local buffer using a especific format
+    Data buffer class use to capture data comming from the stream FIFO \
+    and copy it into a local buffer using a especific data format.
     """
     def __init__(self, size):
         rogue.interfaces.stream.Slave.__init__(self)
@@ -127,18 +127,20 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         frame.read(data, 0)
         self._buf = struct.unpack('%s%d%s' % (self._data_byte_order, \
             (len(data)//self._data_size), self._data_format), data)
+        print("call callback")
         self._callback()
 
-    def set_cb(self, callback):
+    def set_callback(self, callback):
         """
         Function to set the callback function
         """
         self._callback = callback
 
-    def get_val(self):
+    def read(self):
         """
         Function to read the data buffer
         """
+        print("call read")
         return self._buf
 
     def set_data_format_string(self, format_string):
@@ -218,6 +220,18 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         if (value < len(self._data_byte_order_dict)):
             self._data_byte_order = list(self._data_byte_order_dict)[value]
 
+class StreamFifo(rogue.interfaces.stream.Fifo):
+    """
+    Stream data fifo class used to setup a stream FIFO which will send \
+    the data to a local data buffer.
+    """
+    def __init__(self, size):
+        rogue.interfaces.stream.Fifo.__init__(self, 0, size)
+
+        # Setup a buffer with Slave interface to receive data from FIFO
+        self.buffer = DataBuffer(size)
+        self._setSlave(self.buffer)
+
 # Local server class
 class LocalServer(pyrogue.Root):
 
@@ -252,10 +266,10 @@ class LocalServer(pyrogue.Root):
             if epics_prefix:
                 # Add data streams (0-7) to local variables so they are expose as PVs
                 # Also add PVs to select the data format
-                buf = []
+                fifo = []
                 for i in range(8):
-                    buf.append(DataBuffer(2*1024*1024)) # 2MB buffers
-                    pyrogue.streamTap(fpga.stream.application(0x80 + i), buf[i])
+                    fifo.append(StreamFifo(2*1024*1024)) # 2MB buffers
+                    pyrogue.streamTap(fpga.stream.application(0x80 + i), fifo[i])
 
                     # Variable to read the stream data
                     stream_var = pyrogue.LocalVariable(
@@ -263,12 +277,12 @@ class LocalServer(pyrogue.Root):
                         description='Stream %d' % i,
                         mode='RO',
                         value=0,
-                        localGet=buf[i].get_val,
+                        localGet=fifo[i].buffer.read,
                         update=False,
                         hidden=True)
 
                     # Set the buffer callback to update the variable
-                    buf[i].set_cb(stream_var.updated)
+                    fifo[i].buffer.set_callback(stream_var.updated)
 
                     # Variable to set the data format
                     data_format_var = pyrogue.LocalVariable(
@@ -276,8 +290,8 @@ class LocalServer(pyrogue.Root):
                         description='Type of data being unpacked',
                         mode='RW',
                         value=0,
-                        enum={i:j for i,j in enumerate(buf[i].get_data_format_list())},
-                        localSet=buf[i].set_data_format,
+                        enum={i:j for i,j in enumerate(fifo[i].buffer.get_data_format_list())},
+                        localSet=fifo[i].buffer.set_data_format,
                         hidden=True)
 
                     # Variable to set the data byte order
@@ -286,8 +300,8 @@ class LocalServer(pyrogue.Root):
                         description='Byte order of data being unpacked',
                         mode='RW',
                         value=0,
-                        enum={i:j for i,j in enumerate(buf[i].get_data_byte_order_list())},
-                        localSet=buf[i].set_data_byte_order,
+                        enum={i:j for i,j in enumerate(fifo[i].buffer.get_data_byte_order_list())},
+                        localSet=fifo[i].buffer.set_data_byte_order,
                         hidden=True)
 
                     # Variable to read the data format string
@@ -296,7 +310,7 @@ class LocalServer(pyrogue.Root):
                         description='Format string used to unpack the data',
                         mode='RO',
                         value=0,
-                        localGet=buf[i].get_data_format_string,
+                        localGet=fifo[i].buffer.get_data_format_string,
                         hidden=True)
 
                     # Add listener to update the format string readback variable
