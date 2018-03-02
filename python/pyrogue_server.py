@@ -220,18 +220,6 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         if (value < len(self._data_byte_order_dict)):
             self._data_byte_order = list(self._data_byte_order_dict)[value]
 
-class StreamFifo(rogue.interfaces.stream.Fifo):
-    """
-    Stream data fifo class used to setup a stream FIFO which will send \
-    the data to a local data buffer.
-    """
-    def __init__(self, size):
-        rogue.interfaces.stream.Fifo.__init__(self, 0, size)
-
-        # Setup a buffer with Slave interface to receive data from FIFO
-        self.buffer = DataBuffer(size)
-        self._setSlave(self.buffer)
-
 # Local server class
 class LocalServer(pyrogue.Root):
 
@@ -266,10 +254,15 @@ class LocalServer(pyrogue.Root):
             if epics_prefix:
                 # Add data streams (0-7) to local variables so they are expose as PVs
                 # Also add PVs to select the data format
-                fifo = []
+                size = 2*1024*1024 # 2MB buffers
                 for i in range(8):
-                    fifo.append(StreamFifo(2*1024*1024)) # 2MB buffers
-                    pyrogue.streamTap(fpga.stream.application(0x80 + i), fifo[i])
+
+                    # Setup a FIFO tapped to the steram data and a Slave data buffer
+                    # Local variables will talk to the data buffer directly.
+                    stream_fifo = rogue.interfaces.stream.Fifo(0,size)
+                    data_buffer = DataBuffer(size)
+                    stream_fifo._setSlave(data_buffer)
+                    pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
 
                     # Variable to read the stream data
                     stream_var = pyrogue.LocalVariable(
@@ -277,12 +270,12 @@ class LocalServer(pyrogue.Root):
                         description='Stream %d' % i,
                         mode='RO',
                         value=0,
-                        localGet=fifo[i].buffer.read,
+                        localGet=data_buffer.read,
                         update=False,
                         hidden=True)
 
                     # Set the buffer callback to update the variable
-                    fifo[i].buffer.set_callback(stream_var.updated)
+                    data_buffer.set_callback(stream_var.updated)
 
                     # Variable to set the data format
                     data_format_var = pyrogue.LocalVariable(
@@ -290,8 +283,8 @@ class LocalServer(pyrogue.Root):
                         description='Type of data being unpacked',
                         mode='RW',
                         value=0,
-                        enum={i:j for i,j in enumerate(fifo[i].buffer.get_data_format_list())},
-                        localSet=fifo[i].buffer.set_data_format,
+                        enum={i:j for i,j in enumerate(data_buffer.get_data_format_list())},
+                        localSet=data_buffer.set_data_format,
                         hidden=True)
 
                     # Variable to set the data byte order
@@ -300,8 +293,8 @@ class LocalServer(pyrogue.Root):
                         description='Byte order of data being unpacked',
                         mode='RW',
                         value=0,
-                        enum={i:j for i,j in enumerate(fifo[i].buffer.get_data_byte_order_list())},
-                        localSet=fifo[i].buffer.set_data_byte_order,
+                        enum={i:j for i,j in enumerate(data_buffer.get_data_byte_order_list())},
+                        localSet=data_buffer.set_data_byte_order,
                         hidden=True)
 
                     # Variable to read the data format string
@@ -310,7 +303,7 @@ class LocalServer(pyrogue.Root):
                         description='Format string used to unpack the data',
                         mode='RO',
                         value=0,
-                        localGet=fifo[i].buffer.get_data_format_string,
+                        localGet=data_buffer.get_data_format_string,
                         hidden=True)
 
                     # Add listener to update the format string readback variable
