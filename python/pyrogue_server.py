@@ -226,20 +226,14 @@ class LocalServer(pyrogue.Root):
         try:
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
 
-            # File writer for streaming interfaces
-            stm_data_writer = pyrogue.utilities.fileio.StreamWriter(name='streamDataWriter')
-            self.add(stm_data_writer)
-
             # Instantiate Fpga top level
             fpga = FpgaTopLevel(ipAddr=ip_addr)
 
             # Add devices
             self.add(fpga)
 
-            # Add data streams (0-7) to file channels (0-7)
-            for i in range(8):
-                pyrogue.streamConnect(fpga.stream.application(0x80 + i),
-                                      stm_data_writer.getChannel(i))
+            # File writer for streaming interfaces
+            self.add(fpga.dataWriter)
 
             # Set global timeout
             self.setTimeout(timeout=1)
