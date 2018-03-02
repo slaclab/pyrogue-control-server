@@ -43,17 +43,17 @@ except ImportError:
 def usage(name):
     print("Usage: %s -a|--addr IP_address [-d|--defaults config_file]" % name,\
         " [-s|--server] [-p|--pyro group_name] [-e|--epics prefix]",\
+        " [-n|--nopoll]",\
         " [-h|--help]")
-    print("    -h||--help                : show this message")
+    print("    -h||--help                : Show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
-    print("    -d|--defaults config_file : Default configuration file",\
-        " (optional)")
+    print("    -d|--defaults config_file : Default configuration file")
     print("    -p|--pyro group_name      : Start a Pyro4 server with",\
         " group name \"group_name\"")
     print("    -e|--epics prefix         : Start an EPICS server with",\
         " PV name prefix \"prefix\"")
     print("    -s|--server               : Server mode, without staring",\
-        " a GUI (Must be use with -p and/or -e)")
+        " a GUI (Must be used with -p and/or -e)")
     print("    -n|--nopoll               : Disable all polling")
     print("")
     print("Examples:")
