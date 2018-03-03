@@ -57,7 +57,7 @@ def usage(name):
     print("    -n|--nopoll               : Disable all polling")
     print("    -b|--stream2pv byte_size  : Expose the stream data as EPICS",\
         "PVs. Only the first \"byte_size\" bytes will be exposed.",\
-        "Maximum allowed size is 2MB. (Must be used with -e)")
+        "(Must be used with -e)")
     print("")
     print("Examples:")
     print("    %s -a IP_address                            :" % name,\
@@ -425,10 +425,6 @@ def main():
         socket.inet_aton(ip_addr)
     except socket.error:
         exit_message("ERROR: Invalid IP Address.")
-
-    # Stream PVs maximum size is 2MB
-    if (stream_pv_size > 2*1024*1024):
-        exit_message("ERROR: stream PV size can be greater than 2MB.")
 
     print("")
     print("Trying to ping the FPGA...")
