@@ -43,18 +43,21 @@ except ImportError:
 def usage(name):
     print("Usage: %s -a|--addr IP_address [-d|--defaults config_file]" % name,\
         " [-s|--server] [-p|--pyro group_name] [-e|--epics prefix]",\
-        " [-n|--nopoll]",\
+        " [-n|--nopoll] [-b|--stream2pv byte_size]",\
         " [-h|--help]")
     print("    -h||--help                : Show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
     print("    -d|--defaults config_file : Default configuration file")
     print("    -p|--pyro group_name      : Start a Pyro4 server with",\
-        " group name \"group_name\"")
+        "group name \"group_name\"")
     print("    -e|--epics prefix         : Start an EPICS server with",\
-        " PV name prefix \"prefix\"")
+        "PV name prefix \"prefix\"")
     print("    -s|--server               : Server mode, without staring",\
-        " a GUI (Must be used with -p and/or -e)")
+        "a GUI (Must be used with -p and/or -e)")
     print("    -n|--nopoll               : Disable all polling")
+    print("    -b|--stream2pv byte_size  : Expose the stream data as EPICS",\
+        "PVs. Only the first \"byte_size\" bytes will be exposed.",\
+        "Maximum allowed size is 2MB. (Must be used with -e)")
     print("")
     print("Examples:")
     print("    %s -a IP_address                            :" % name,\
@@ -223,7 +226,8 @@ class DataBuffer(rogue.interfaces.stream.Slave):
 # Local server class
 class LocalServer(pyrogue.Root):
 
-    def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix, polling_en):
+    def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix,\
+        polling_en, stream_pv_size):
 
         try:
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
@@ -250,17 +254,19 @@ class LocalServer(pyrogue.Root):
                     10: '10 Hz',
                     30: '30 Hz'}))
 
-            # Devices used only with an EPICS server
-            if epics_prefix:
+            # PVs for stream data
+            if epics_prefix and stream_pv_size:
+
+                print("Enabling stream data on PVs (buffer size = %d bytes)" % stream_pv_size)
+
                 # Add data streams (0-7) to local variables so they are expose as PVs
                 # Also add PVs to select the data format
-                size = 2*1024*1024 # 2MB buffers
                 for i in range(8):
 
                     # Setup a FIFO tapped to the steram data and a Slave data buffer
                     # Local variables will talk to the data buffer directly.
-                    stream_fifo = rogue.interfaces.stream.Fifo(0,size)
-                    data_buffer = DataBuffer(size)
+                    stream_fifo = rogue.interfaces.stream.Fifo(0, stream_pv_size)
+                    data_buffer = DataBuffer(stream_pv_size)
                     stream_fifo._setSlave(data_buffer)
                     pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
 
@@ -406,12 +412,13 @@ def main():
     config_file = ""
     server_mode = False
     polling_en = True
+    stream_pv_size = 0
 
     # Read Arguments
     try:
         opts, _ = getopt.getopt(sys.argv[1:],
-            "ha:sp:e:d:n",
-            ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll"])
+            "ha:sp:e:d:nb:",
+            ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll", "stream2pv="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -430,6 +437,11 @@ def main():
             epics_prefix = arg
         elif opt in ("-n", "--nopoll"):     # Disable all polling
             polling_en = False
+        elif opt in ("-b", "--stream2pv"):  # Stream data to PVs
+            try:
+                stream_pv_size = int(arg)
+            except ValueError:
+                exit_message("ERROR: Invalid stream PV size")
         elif opt in ("-d", "--defaults"):   # Default configuration file
             config_file = arg
 
@@ -437,6 +449,10 @@ def main():
         socket.inet_aton(ip_addr)
     except socket.error:
         exit_message("ERROR: Invalid IP Address.")
+
+    # Stream PVs maximum size is 2MB
+    if (stream_pv_size > 2*1024*1024):
+        exit_message("ERROR: stream PV size can be greater than 2MB.")
 
     print("")
     print("Trying to ping the FPGA...")
@@ -458,7 +474,8 @@ def main():
         server_mode=server_mode,
         group_name=group_name,
         epics_prefix=epics_prefix,
-        polling_en=polling_en)
+        polling_en=polling_en,
+        stream_pv_size=stream_pv_size)
 
     # Stop server
     server.stop()
