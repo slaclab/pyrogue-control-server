@@ -178,12 +178,24 @@ class DataBuffer(rogue.interfaces.stream.Slave):
                 self._data_format = data_format
                 self._data_size = 4
 
+    def get_data_format(self):
+        """
+        Function to read the data format
+        """
+        return list(self._data_format_dict).index(self._data_format)
+
     def set_data_byte_order(self, dev, var, value):
         """
         Function to set the data byte order
         """
         if (value < len(self._data_byte_order_dict)):
             self._data_byte_order = list(self._data_byte_order_dict)[value]
+
+    def get_data_byte_order(self):
+        """
+        Function to read the data byte order
+        """
+        return list(self._data_byte_order_dict).index(self._data_byte_order)
 
 # Local server class
 class LocalServer(pyrogue.Root):
@@ -253,7 +265,8 @@ class LocalServer(pyrogue.Root):
                         value=0,
                         enum={i:j for i,j in enumerate(data_buffer.get_data_format_list())},
                         localSet=data_buffer.set_data_format,
-                        hidden=True)
+                        localGet=data_buffer.get_data_format,
+                        hidden=False)
 
                     # Variable to set the data byte order
                     byte_order_var = pyrogue.LocalVariable(
@@ -263,7 +276,8 @@ class LocalServer(pyrogue.Root):
                         value=0,
                         enum={i:j for i,j in enumerate(data_buffer.get_data_byte_order_list())},
                         localSet=data_buffer.set_data_byte_order,
-                        hidden=True)
+                        localGet=data_buffer.get_data_byte_order,
+                        hidden=False)
 
                     # Variable to read the data format string
                     format_string_var = pyrogue.LocalVariable(
@@ -272,7 +286,7 @@ class LocalServer(pyrogue.Root):
                         mode='RO',
                         value=0,
                         localGet=data_buffer.get_data_format_string,
-                        hidden=True)
+                        hidden=False)
 
                     # Add listener to update the format string readback variable
                     # when the data format or data byte order is changed
