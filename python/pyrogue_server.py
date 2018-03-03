@@ -130,7 +130,6 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         frame.read(data, 0)
         self._buf = struct.unpack('%s%d%s' % (self._data_byte_order, \
             (len(data)//self._data_size), self._data_format), data)
-        print("call callback")
         self._callback()
 
     def set_callback(self, callback):
@@ -143,7 +142,6 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         """
         Function to read the data buffer
         """
-        print("call read")
         return self._buf
 
     def set_data_format_string(self, format_string):
