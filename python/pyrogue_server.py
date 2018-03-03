@@ -43,18 +43,21 @@ except ImportError:
 def usage(name):
     print("Usage: %s -a|--addr IP_address [-d|--defaults config_file]" % name,\
         " [-s|--server] [-p|--pyro group_name] [-e|--epics prefix]",\
+        " [-n|--nopoll] [-b|--stream2pv byte_size]",\
         " [-h|--help]")
-    print("    -h||--help                : show this message")
+    print("    -h||--help                : Show this message")
     print("    -a|--addr IP_address      : FPGA IP address")
-    print("    -d|--defaults config_file : Default configuration file",\
-        " (optional)")
+    print("    -d|--defaults config_file : Default configuration file")
     print("    -p|--pyro group_name      : Start a Pyro4 server with",\
-        " group name \"group_name\"")
+        "group name \"group_name\"")
     print("    -e|--epics prefix         : Start an EPICS server with",\
-        " PV name prefix \"prefix\"")
+        "PV name prefix \"prefix\"")
     print("    -s|--server               : Server mode, without staring",\
-        " a GUI (Must be use with -p and/or -e)")
+        "a GUI (Must be used with -p and/or -e)")
     print("    -n|--nopoll               : Disable all polling")
+    print("    -b|--stream2pv byte_size  : Expose the stream data as EPICS",\
+        "PVs. Only the first \"byte_size\" bytes will be exposed.",\
+        "(Must be used with -e)")
     print("")
     print("Examples:")
     print("    %s -a IP_address                            :" % name,\
@@ -93,8 +96,8 @@ def get_host_name():
 
 class DataBuffer(rogue.interfaces.stream.Slave):
     """
-    Data buffer class use to receive data from a stream interface and \
-    copies into a local buffer using a especific format
+    Data buffer class use to capture data comming from the stream FIFO \
+    and copy it into a local buffer using a especific data format.
     """
     def __init__(self, size):
         rogue.interfaces.stream.Slave.__init__(self)
@@ -129,62 +132,17 @@ class DataBuffer(rogue.interfaces.stream.Slave):
             (len(data)//self._data_size), self._data_format), data)
         self._callback()
 
-    def set_cb(self, callback):
+    def set_callback(self, callback):
         """
         Function to set the callback function
         """
         self._callback = callback
 
-    def get_val(self):
+    def read(self):
         """
         Function to read the data buffer
         """
         return self._buf
-
-    def set_data_format_string(self, format_string):
-        """
-        Set data transformation format from var bytes.
-        format_string must constain in this order:
-          - a character describing the byte order (optional)
-            * '<' : little-endian
-            * '>' : big-endian
-          - a character describing the data format (optional)
-            * 'B' : unsigned 8-bit values
-            * 'b' : signed 8-bit values
-            * 'H' : unsigned 16-bit values
-            * 'h' : signed 16-bit values
-            * 'I' : unsigned 32-bit values
-            * 'i' : signed 32-bit values
-          Examples: '>H', '<', 'I'
-        """
-
-        if len(format_string) == 2:
-            data_format = format_string[1]
-            byte_order = format_string[0]
-        else:
-            if format_string[0].isalpha():
-                data_format = format_string[0]
-            else:
-                byte_order = format_string[0]
-
-        if 'data_format' in locals():
-            if data_format == 'B' or data_format == 'b':      # uint8, int8
-                self._data_format = data_format
-                self._data_size = 1
-            if data_format == 'H' or  data_format == 'h':     # uint16, int16
-                self._data_format = data_format
-                self._data_size = 2
-            elif data_format == 'I' or data_format == 'i':    # uint32, int32
-                self._data_format = data_format
-                self._data_size = 4
-            else:
-                print("Data format not supported: \"%s\"" % data_format)
-
-        if 'byte_order' in locals():
-            if byte_order == '<' or byte_order == '>':        # le, be
-                self._data_byte_order = byte_order
-            else:
-                print("Data byte order not supported: \"%s\"" % byte_order)
 
     def get_data_format_string(self):
         """
@@ -209,7 +167,22 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         Function to set the data format
         """
         if (value < len(self._data_format_dict)):
-            self._data_format = list(self._data_format_dict)[value]
+            data_format = (list(self._data_format_dict)[value])
+            if data_format == 'B' or data_format == 'b':      # uint8, int8
+                self._data_format = data_format
+                self._data_size = 1
+            elif data_format == 'H' or  data_format == 'h':     # uint16, int16
+                self._data_format = data_format
+                self._data_size = 2
+            elif data_format == 'I' or data_format == 'i':    # uint32, int32
+                self._data_format = data_format
+                self._data_size = 4
+
+    def get_data_format(self):
+        """
+        Function to read the data format
+        """
+        return list(self._data_format_dict).index(self._data_format)
 
     def set_data_byte_order(self, dev, var, value):
         """
@@ -218,17 +191,20 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         if (value < len(self._data_byte_order_dict)):
             self._data_byte_order = list(self._data_byte_order_dict)[value]
 
+    def get_data_byte_order(self):
+        """
+        Function to read the data byte order
+        """
+        return list(self._data_byte_order_dict).index(self._data_byte_order)
+
 # Local server class
 class LocalServer(pyrogue.Root):
 
-    def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix, polling_en):
+    def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix,\
+        polling_en, stream_pv_size):
 
         try:
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
-
-            # File writer for streaming interfaces
-            stm_data_writer = pyrogue.utilities.fileio.StreamWriter(name='streamDataWriter')
-            self.add(stm_data_writer)
 
             # Instantiate Fpga top level
             fpga = FpgaTopLevel(ipAddr=ip_addr)
@@ -236,10 +212,8 @@ class LocalServer(pyrogue.Root):
             # Add devices
             self.add(fpga)
 
-            # Add data streams (0-7) to file channels (0-7)
-            for i in range(8):
-                pyrogue.streamConnect(fpga.stream.application(0x80 + i),
-                                      stm_data_writer.getChannel(i))
+            # File writer for streaming interfaces
+            self.add(fpga.dataWriter)
 
             # Set global timeout
             self.setTimeout(timeout=1)
@@ -254,14 +228,21 @@ class LocalServer(pyrogue.Root):
                     10: '10 Hz',
                     30: '30 Hz'}))
 
-            # Devices used only with an EPICS server
-            if epics_prefix:
+            # PVs for stream data
+            if epics_prefix and stream_pv_size:
+
+                print("Enabling stream data on PVs (buffer size = %d bytes)" % stream_pv_size)
+
                 # Add data streams (0-7) to local variables so they are expose as PVs
                 # Also add PVs to select the data format
-                buf = []
                 for i in range(8):
-                    buf.append(DataBuffer(2*1024*1024)) # 2MB buffers
-                    pyrogue.streamTap(fpga.stream.application(0x80 + i), buf[i])
+
+                    # Setup a FIFO tapped to the steram data and a Slave data buffer
+                    # Local variables will talk to the data buffer directly.
+                    stream_fifo = rogue.interfaces.stream.Fifo(0, stream_pv_size)
+                    data_buffer = DataBuffer(stream_pv_size)
+                    stream_fifo._setSlave(data_buffer)
+                    pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
 
                     # Variable to read the stream data
                     stream_var = pyrogue.LocalVariable(
@@ -269,12 +250,12 @@ class LocalServer(pyrogue.Root):
                         description='Stream %d' % i,
                         mode='RO',
                         value=0,
-                        localGet=buf[i].get_val,
+                        localGet=data_buffer.read,
                         update=False,
                         hidden=True)
 
                     # Set the buffer callback to update the variable
-                    buf[i].set_cb(stream_var.updated)
+                    data_buffer.set_callback(stream_var.updated)
 
                     # Variable to set the data format
                     data_format_var = pyrogue.LocalVariable(
@@ -282,8 +263,9 @@ class LocalServer(pyrogue.Root):
                         description='Type of data being unpacked',
                         mode='RW',
                         value=0,
-                        enum={i:j for i,j in enumerate(buf[i].get_data_format_list())},
-                        localSet=buf[i].set_data_format,
+                        enum={i:j for i,j in enumerate(data_buffer.get_data_format_list())},
+                        localSet=data_buffer.set_data_format,
+                        localGet=data_buffer.get_data_format,
                         hidden=True)
 
                     # Variable to set the data byte order
@@ -292,8 +274,9 @@ class LocalServer(pyrogue.Root):
                         description='Byte order of data being unpacked',
                         mode='RW',
                         value=0,
-                        enum={i:j for i,j in enumerate(buf[i].get_data_byte_order_list())},
-                        localSet=buf[i].set_data_byte_order,
+                        enum={i:j for i,j in enumerate(data_buffer.get_data_byte_order_list())},
+                        localSet=data_buffer.set_data_byte_order,
+                        localGet=data_buffer.get_data_byte_order,
                         hidden=True)
 
                     # Variable to read the data format string
@@ -302,7 +285,7 @@ class LocalServer(pyrogue.Root):
                         description='Format string used to unpack the data',
                         mode='RO',
                         value=0,
-                        localGet=buf[i].get_data_format_string,
+                        localGet=data_buffer.get_data_format_string,
                         hidden=True)
 
                     # Add listener to update the format string readback variable
@@ -405,12 +388,13 @@ def main():
     config_file = ""
     server_mode = False
     polling_en = True
+    stream_pv_size = 0
 
     # Read Arguments
     try:
         opts, _ = getopt.getopt(sys.argv[1:],
-            "ha:sp:e:d:n",
-            ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll"])
+            "ha:sp:e:d:nb:",
+            ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll", "stream2pv="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -429,6 +413,11 @@ def main():
             epics_prefix = arg
         elif opt in ("-n", "--nopoll"):     # Disable all polling
             polling_en = False
+        elif opt in ("-b", "--stream2pv"):  # Stream data to PVs
+            try:
+                stream_pv_size = int(arg)
+            except ValueError:
+                exit_message("ERROR: Invalid stream PV size")
         elif opt in ("-d", "--defaults"):   # Default configuration file
             config_file = arg
 
@@ -457,7 +446,8 @@ def main():
         server_mode=server_mode,
         group_name=group_name,
         epics_prefix=epics_prefix,
-        polling_en=polling_en)
+        polling_en=polling_en,
+        stream_pv_size=stream_pv_size)
 
     # Stop server
     server.stop()
