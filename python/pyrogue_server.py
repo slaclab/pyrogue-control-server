@@ -266,7 +266,7 @@ class LocalServer(pyrogue.Root):
                         enum={i:j for i,j in enumerate(data_buffer.get_data_format_list())},
                         localSet=data_buffer.set_data_format,
                         localGet=data_buffer.get_data_format,
-                        hidden=False)
+                        hidden=True)
 
                     # Variable to set the data byte order
                     byte_order_var = pyrogue.LocalVariable(
@@ -277,7 +277,7 @@ class LocalServer(pyrogue.Root):
                         enum={i:j for i,j in enumerate(data_buffer.get_data_byte_order_list())},
                         localSet=data_buffer.set_data_byte_order,
                         localGet=data_buffer.get_data_byte_order,
-                        hidden=False)
+                        hidden=True)
 
                     # Variable to read the data format string
                     format_string_var = pyrogue.LocalVariable(
@@ -286,7 +286,7 @@ class LocalServer(pyrogue.Root):
                         mode='RO',
                         value=0,
                         localGet=data_buffer.get_data_format_string,
-                        hidden=False)
+                        hidden=True)
 
                     # Add listener to update the format string readback variable
                     # when the data format or data byte order is changed
