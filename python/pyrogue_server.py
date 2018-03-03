@@ -144,51 +144,6 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         """
         return self._buf
 
-    def set_data_format_string(self, format_string):
-        """
-        Set data transformation format from var bytes.
-        format_string must constain in this order:
-          - a character describing the byte order (optional)
-            * '<' : little-endian
-            * '>' : big-endian
-          - a character describing the data format (optional)
-            * 'B' : unsigned 8-bit values
-            * 'b' : signed 8-bit values
-            * 'H' : unsigned 16-bit values
-            * 'h' : signed 16-bit values
-            * 'I' : unsigned 32-bit values
-            * 'i' : signed 32-bit values
-          Examples: '>H', '<', 'I'
-        """
-
-        if len(format_string) == 2:
-            data_format = format_string[1]
-            byte_order = format_string[0]
-        else:
-            if format_string[0].isalpha():
-                data_format = format_string[0]
-            else:
-                byte_order = format_string[0]
-
-        if 'data_format' in locals():
-            if data_format == 'B' or data_format == 'b':      # uint8, int8
-                self._data_format = data_format
-                self._data_size = 1
-            if data_format == 'H' or  data_format == 'h':     # uint16, int16
-                self._data_format = data_format
-                self._data_size = 2
-            elif data_format == 'I' or data_format == 'i':    # uint32, int32
-                self._data_format = data_format
-                self._data_size = 4
-            else:
-                print("Data format not supported: \"%s\"" % data_format)
-
-        if 'byte_order' in locals():
-            if byte_order == '<' or byte_order == '>':        # le, be
-                self._data_byte_order = byte_order
-            else:
-                print("Data byte order not supported: \"%s\"" % byte_order)
-
     def get_data_format_string(self):
         """
         Function to get the current format string
@@ -212,7 +167,16 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         Function to set the data format
         """
         if (value < len(self._data_format_dict)):
-            self._data_format = list(self._data_format_dict)[value]
+            data_format = (list(self._data_format_dict)[value])
+            if data_format == 'B' or data_format == 'b':      # uint8, int8
+                self._data_format = data_format
+                self._data_size = 1
+            elif data_format == 'H' or  data_format == 'h':     # uint16, int16
+                self._data_format = data_format
+                self._data_size = 2
+            elif data_format == 'I' or data_format == 'i':    # uint32, int32
+                self._data_format = data_format
+                self._data_size = 4
 
     def set_data_byte_order(self, dev, var, value):
         """
