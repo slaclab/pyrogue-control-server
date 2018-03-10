@@ -32,7 +32,7 @@ import pyrogue.utilities.fileio
 import rogue.interfaces.stream
 import PyQt4.QtGui
 import pyrogue.gui
-import pyrogue.epics
+import pyrogue.protocols.epics
 
 try:
     from FpgaTopLevel import FpgaTopLevel
@@ -348,7 +348,7 @@ class LocalServer(pyrogue.Root):
         # Start the EPICS server
         if epics_prefix:
             print("Starting EPICS server using prefix \"%s\"" % epics_prefix)
-            self.epics = pyrogue.epics.EpicsCaServer(base=epics_prefix, root=self)
+            self.epics = pyrogue.protocols.epics.EpicsCaServer(base=epics_prefix, root=self)
             self.epics.start()
 
         # If no in server Mode, start the GUI
