@@ -36,8 +36,9 @@ import pyrogue.protocols.epics
 
 try:
     from FpgaTopLevel import FpgaTopLevel
-except ImportError:
-    pass
+except ImportError as ie:
+    print("Error importing FpgaTopLevel: %s" % ie)
+    exit()
 
 # Print the usage message
 def usage(name):
