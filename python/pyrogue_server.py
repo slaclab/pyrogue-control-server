@@ -51,7 +51,6 @@ else:
     print("Using GDD-based EPICS server")
     import pyrogue.protocols.epics
 
-
 try:
     from FpgaTopLevel import FpgaTopLevel
 except ImportError as ie:
