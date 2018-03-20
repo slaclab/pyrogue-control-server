@@ -32,7 +32,25 @@ import pyrogue.utilities.fileio
 import rogue.interfaces.stream
 import PyQt4.QtGui
 import pyrogue.gui
-import pyrogue.protocols.epics
+
+# Choose the appropiate epics module:
+#  - until version 2.6.0 rogue uses PCASpy
+#  - later versions use GDD
+use_pcas = True
+try:
+    ver = pyrogue.__version__
+    if (ver > '2.6.0'):
+        use_pcas = False
+except AttributeError:
+    pass
+
+if (use_pcas):
+    print("Using PCAS-based EPICS server")
+    import pyrogue.epics
+else:
+    print("Using GDD-based EPICS server")
+    import pyrogue.protocols.epics
+
 
 try:
     from FpgaTopLevel import FpgaTopLevel
@@ -229,76 +247,77 @@ class LocalServer(pyrogue.Root):
                     10: '10 Hz',
                     30: '30 Hz'}))
 
-            # PVs for stream data
-            if epics_prefix and stream_pv_size:
+            # PVs for stream data, used on PCAS-based EPICS server
+            if use_pcas:
+                if epics_prefix and stream_pv_size:
 
-                print("Enabling stream data on PVs (buffer size = %d bytes)" % stream_pv_size)
+                    print("Enabling stream data on PVs (buffer size = %d bytes)" % stream_pv_size)
 
-                # Add data streams (0-7) to local variables so they are expose as PVs
-                # Also add PVs to select the data format
-                for i in range(8):
+                    # Add data streams (0-7) to local variables so they are expose as PVs
+                    # Also add PVs to select the data format
+                    for i in range(8):
 
-                    # Setup a FIFO tapped to the steram data and a Slave data buffer
-                    # Local variables will talk to the data buffer directly.
-                    stream_fifo = rogue.interfaces.stream.Fifo(0, stream_pv_size)
-                    data_buffer = DataBuffer(stream_pv_size)
-                    stream_fifo._setSlave(data_buffer)
-                    pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
+                        # Setup a FIFO tapped to the steram data and a Slave data buffer
+                        # Local variables will talk to the data buffer directly.
+                        stream_fifo = rogue.interfaces.stream.Fifo(0, stream_pv_size)
+                        data_buffer = DataBuffer(stream_pv_size)
+                        stream_fifo._setSlave(data_buffer)
+                        pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
 
-                    # Variable to read the stream data
-                    stream_var = pyrogue.LocalVariable(
-                        name='Stream%d' % i,
-                        description='Stream %d' % i,
-                        mode='RO',
-                        value=0,
-                        localGet=data_buffer.read,
-                        update=False,
-                        hidden=True)
+                        # Variable to read the stream data
+                        stream_var = pyrogue.LocalVariable(
+                            name='Stream%d' % i,
+                            description='Stream %d' % i,
+                            mode='RO',
+                            value=0,
+                            localGet=data_buffer.read,
+                            update=False,
+                            hidden=True)
 
-                    # Set the buffer callback to update the variable
-                    data_buffer.set_callback(stream_var.updated)
+                        # Set the buffer callback to update the variable
+                        data_buffer.set_callback(stream_var.updated)
 
-                    # Variable to set the data format
-                    data_format_var = pyrogue.LocalVariable(
-                        name='StreamDataFormat%d' % i,
-                        description='Type of data being unpacked',
-                        mode='RW',
-                        value=0,
-                        enum={i:j for i,j in enumerate(data_buffer.get_data_format_list())},
-                        localSet=data_buffer.set_data_format,
-                        localGet=data_buffer.get_data_format,
-                        hidden=True)
+                        # Variable to set the data format
+                        data_format_var = pyrogue.LocalVariable(
+                            name='StreamDataFormat%d' % i,
+                            description='Type of data being unpacked',
+                            mode='RW',
+                            value=0,
+                            enum={i:j for i,j in enumerate(data_buffer.get_data_format_list())},
+                            localSet=data_buffer.set_data_format,
+                            localGet=data_buffer.get_data_format,
+                            hidden=True)
 
-                    # Variable to set the data byte order
-                    byte_order_var = pyrogue.LocalVariable(
-                        name='StreamDataByteOrder%d' % i,
-                        description='Byte order of data being unpacked',
-                        mode='RW',
-                        value=0,
-                        enum={i:j for i,j in enumerate(data_buffer.get_data_byte_order_list())},
-                        localSet=data_buffer.set_data_byte_order,
-                        localGet=data_buffer.get_data_byte_order,
-                        hidden=True)
+                        # Variable to set the data byte order
+                        byte_order_var = pyrogue.LocalVariable(
+                            name='StreamDataByteOrder%d' % i,
+                            description='Byte order of data being unpacked',
+                            mode='RW',
+                            value=0,
+                            enum={i:j for i,j in enumerate(data_buffer.get_data_byte_order_list())},
+                            localSet=data_buffer.set_data_byte_order,
+                            localGet=data_buffer.get_data_byte_order,
+                            hidden=True)
 
-                    # Variable to read the data format string
-                    format_string_var = pyrogue.LocalVariable(
-                        name='StreamDataFormatString%d' % i,
-                        description='Format string used to unpack the data',
-                        mode='RO',
-                        value=0,
-                        localGet=data_buffer.get_data_format_string,
-                        hidden=True)
+                        # Variable to read the data format string
+                        format_string_var = pyrogue.LocalVariable(
+                            name='StreamDataFormatString%d' % i,
+                            description='Format string used to unpack the data',
+                            mode='RO',
+                            value=0,
+                            localGet=data_buffer.get_data_format_string,
+                            hidden=True)
 
-                    # Add listener to update the format string readback variable
-                    # when the data format or data byte order is changed
-                    data_format_var.addListener(format_string_var)
-                    byte_order_var.addListener(format_string_var)
+                        # Add listener to update the format string readback variable
+                        # when the data format or data byte order is changed
+                        data_format_var.addListener(format_string_var)
+                        byte_order_var.addListener(format_string_var)
 
-                    # Add the local variable to self
-                    self.add(stream_var)
-                    self.add(data_format_var)
-                    self.add(byte_order_var)
-                    self.add(format_string_var)
+                        # Add the local variable to self
+                        self.add(stream_var)
+                        self.add(data_format_var)
+                        self.add(byte_order_var)
+                        self.add(format_string_var)
 
             # lcaPut limits the maximun lenght of a string to 40 chars, as defined
             # in the EPICS R3.14 CA reference manual. This won't allowed to use the
@@ -349,7 +368,24 @@ class LocalServer(pyrogue.Root):
         # Start the EPICS server
         if epics_prefix:
             print("Starting EPICS server using prefix \"%s\"" % epics_prefix)
-            self.epics = pyrogue.protocols.epics.EpicsCaServer(base=epics_prefix, root=self)
+
+            # Choose the appropiate epics module:
+            if use_pcas:
+                self.epics = pyrogue.epics.EpicsCaServer(base=epics_prefix, root=self)
+            else:
+                self.epics = pyrogue.protocols.epics.EpicsCaServer(base=epics_prefix, root=self)
+
+                # PVs for stream data, used on GDD-based EPICS server
+                if stream_pv_size:
+
+                    print("Enabling stream data on PVs (buffer size = %d bytes)" % stream_pv_size)
+
+                    for i in range(8):
+                        stream_slave = self.epics.createSlave(name="AMCc:Stream{}".format(i), maxSize=stream_pv_size, type="UInt16")
+                        stream_fifo = rogue.interfaces.stream.Fifo(0, stream_pv_size)
+                        stream_fifo._setSlave(stream_slave)
+                        pyrogue.streamTap(fpga.stream.application(0x80+i), stream_fifo)
+
             self.epics.start()
 
         # If no in server Mode, start the GUI
