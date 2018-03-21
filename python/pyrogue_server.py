@@ -25,9 +25,6 @@ import time
 import struct
 
 import pyrogue
-import pyrogue.protocols
-import rogue.protocols.srp
-import rogue.protocols.udp
 import pyrogue.utilities.fileio
 import rogue.interfaces.stream
 import PyQt4.QtGui
