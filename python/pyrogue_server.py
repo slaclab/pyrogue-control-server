@@ -73,8 +73,8 @@ def usage(name):
     print("    -s|--server                : Server mode, without staring",\
         "a GUI (Must be used with -p and/or -e)")
     print("    -n|--nopoll                : Disable all polling")
-    print("    -b|--stream-size byte_size : Expose the stream data as EPICS",\
-        "PVs. Only the first \"byte_size\" bytes will be exposed.",\
+    print("    -b|--stream-size data_size : Expose the stream data as EPICS",\
+        "PVs. Only the first \"data_size\" points will be exposed.",\
         "(Must be used with -e)")
     print("    -f|--stream-type data_type : Stream data type (UInt16, Int16,",\
         "UInt32 or Int32). Default is UInt16. (Must be used with -e and -b)")
@@ -385,12 +385,19 @@ class LocalServer(pyrogue.Root):
                 # PVs for stream data, used on GDD-based EPICS server
                 if stream_pv_size:
 
-                    print("Enabling stream data on PVs (buffer size = %d bytes, data type = %s)"\
+                    print("Enabling stream data on PVs (buffer size = %d points, data type = %s)"\
                         % (stream_pv_size,stream_pv_type))
 
                     for i in range(8):
                         stream_slave = self.epics.createSlave(name="AMCc:Stream{}".format(i), maxSize=stream_pv_size, type=stream_pv_type)
-                        stream_fifo = rogue.interfaces.stream.Fifo(0, stream_pv_size)
+
+                        # Calculate number of bytes needed on the fifo
+                        if stream_pv_type.find('16'):
+                            fifo_size = stream_pv_size * 2
+                        else:
+                            fifo_size = stream_pv_size * 4
+
+                        stream_fifo = rogue.interfaces.stream.Fifo(0, fifo_size)
                         stream_fifo._setSlave(stream_slave)
                         pyrogue.streamTap(fpga.stream.application(0x80+i), stream_fifo)
 
