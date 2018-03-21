@@ -119,7 +119,7 @@ class DataBuffer(rogue.interfaces.stream.Slave):
     Data buffer class use to capture data comming from the stream FIFO \
     and copy it into a local buffer using a especific data format.
     """
-    def __init__(self, size):
+    def __init__(self, size, data_type):
         rogue.interfaces.stream.Slave.__init__(self)
         self._buf = [0] * size
 
@@ -136,10 +136,24 @@ class DataBuffer(rogue.interfaces.stream.Slave):
             '<': 'little-endian',
             '>': 'big-endian'}
 
-        # Data format: uint16, le
+        # Get data format and size from data type
+        if data_type == 'UInt16':
+            self._data_format = 'H'
+            self._data_size = 2
+        elif data_type == 'Int16':
+            self._data_format = 'h'
+            self._data_size = 2
+        elif data_type == 'UInt32':
+            self._data_format = 'I'
+            self._data_size = 4
+        else:
+            self._data_format = 'i'
+            self._data_size = 4
+
+        # Byte order: LE
         self._data_byte_order = '<'
-        self._data_format = 'h'
-        self._data_size = 2
+
+        # Callback function
         self._callback = lambda: None
 
     def _acceptFrame(self, frame):
@@ -264,10 +278,16 @@ class LocalServer(pyrogue.Root):
                     # Also add PVs to select the data format
                     for i in range(8):
 
+                        # Calculate number of bytes needed on the fifo
+                        if '16' in stream_pv_type:
+                            fifo_size = stream_pv_size * 2
+                        else:
+                            fifo_size = stream_pv_size * 4
+
                         # Setup a FIFO tapped to the steram data and a Slave data buffer
                         # Local variables will talk to the data buffer directly.
-                        stream_fifo = rogue.interfaces.stream.Fifo(0, stream_pv_size)
-                        data_buffer = DataBuffer(stream_pv_size)
+                        stream_fifo = rogue.interfaces.stream.Fifo(0, fifo_size)
+                        data_buffer = DataBuffer(size=stream_pv_size, data_type=stream_pv_type)
                         stream_fifo._setSlave(data_buffer)
                         pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
 
