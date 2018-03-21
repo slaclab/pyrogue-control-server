@@ -27,8 +27,6 @@ import struct
 import pyrogue
 import pyrogue.utilities.fileio
 import rogue.interfaces.stream
-import PyQt4.QtGui
-import pyrogue.gui
 
 # Print the usage message
 def usage(name):
@@ -518,6 +516,11 @@ if __name__ == "__main__":
         else:
             print("Using GDD-based EPICS server")
             import pyrogue.protocols.epics
+
+    # Import the QT and gui modules if not in server mode
+    if not server_mode:
+        import PyQt4.QtGui
+        import pyrogue.gui
 
     # Start pyRogue server
     server = LocalServer(
