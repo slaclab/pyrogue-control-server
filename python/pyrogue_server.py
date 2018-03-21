@@ -33,30 +33,6 @@ import rogue.interfaces.stream
 import PyQt4.QtGui
 import pyrogue.gui
 
-# Choose the appropiate epics module:
-#  - until version 2.6.0 rogue uses PCASpy
-#  - later versions use GDD
-use_pcas = True
-try:
-    ver = pyrogue.__version__
-    if (ver > '2.6.0'):
-        use_pcas = False
-except AttributeError:
-    pass
-
-if (use_pcas):
-    print("Using PCAS-based EPICS server")
-    import pyrogue.epics
-else:
-    print("Using GDD-based EPICS server")
-    import pyrogue.protocols.epics
-
-try:
-    from FpgaTopLevel import FpgaTopLevel
-except ImportError as ie:
-    print("Error importing FpgaTopLevel: %s" % ie)
-    exit()
-
 # Print the usage message
 def usage(name):
     print("Usage: %s -a|--addr IP_address [-d|--defaults config_file]" % name,\
@@ -269,8 +245,8 @@ class LocalServer(pyrogue.Root):
                     30: '30 Hz'}))
 
             # PVs for stream data, used on PCAS-based EPICS server
-            if use_pcas:
-                if epics_prefix and stream_pv_size:
+            if epics_prefix and stream_pv_size:
+                if use_pcas:
 
                     print("Enabling stream data on PVs (buffer size = %d points, data type = %s)"\
                         % (stream_pv_size,stream_pv_type))
@@ -454,7 +430,7 @@ class LocalServer(pyrogue.Root):
         super(LocalServer, self).stop()
 
 # Main body
-def main():
+if __name__ == "__main__":
     ip_addr = ""
     group_name = ""
     epics_prefix = ""
@@ -519,6 +495,33 @@ def main():
     if server_mode and not (group_name or epics_prefix):
         exit_message("    ERROR: Can not start in server mode without Pyro or EPICS server")
 
+    # Try to import the FpgaTopLevel defintion
+    try:
+        from FpgaTopLevel import FpgaTopLevel
+    except ImportError as ie:
+        print("Error importing FpgaTopLevel: %s" % ie)
+        exit()
+
+    # If EPICS server is enable, import the epics module
+    if epics_prefix:
+        # Choose the appropiate epics module:
+        #  - until version 2.6.0 rogue uses PCASpy
+        #  - later versions use GDD
+        use_pcas = True
+        try:
+            ver = pyrogue.__version__
+            if (ver > '2.6.0'):
+                use_pcas = False
+        except AttributeError:
+            pass
+
+        if use_pcas:
+            print("Using PCAS-based EPICS server")
+            import pyrogue.epics
+        else:
+            print("Using GDD-based EPICS server")
+            import pyrogue.protocols.epics
+
     # Start pyRogue server
     server = LocalServer(
         ip_addr=ip_addr,
@@ -534,6 +537,3 @@ def main():
     server.stop()
 
     print("")
-
-if __name__ == "__main__":
-    main()
