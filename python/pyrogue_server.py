@@ -61,21 +61,23 @@ except ImportError as ie:
 def usage(name):
     print("Usage: %s -a|--addr IP_address [-d|--defaults config_file]" % name,\
         " [-s|--server] [-p|--pyro group_name] [-e|--epics prefix]",\
-        " [-n|--nopoll] [-b|--stream2pv byte_size]",\
+        " [-n|--nopoll] [-b|--stream-size byte_size] [-f|--stream-type data_type]",\
         " [-h|--help]")
-    print("    -h||--help                : Show this message")
-    print("    -a|--addr IP_address      : FPGA IP address")
-    print("    -d|--defaults config_file : Default configuration file")
-    print("    -p|--pyro group_name      : Start a Pyro4 server with",\
+    print("    -h||--help                 : Show this message")
+    print("    -a|--addr IP_address       : FPGA IP address")
+    print("    -d|--defaults config_file  : Default configuration file")
+    print("    -p|--pyro group_name       : Start a Pyro4 server with",\
         "group name \"group_name\"")
-    print("    -e|--epics prefix         : Start an EPICS server with",\
+    print("    -e|--epics prefix          : Start an EPICS server with",\
         "PV name prefix \"prefix\"")
-    print("    -s|--server               : Server mode, without staring",\
+    print("    -s|--server                : Server mode, without staring",\
         "a GUI (Must be used with -p and/or -e)")
-    print("    -n|--nopoll               : Disable all polling")
-    print("    -b|--stream2pv byte_size  : Expose the stream data as EPICS",\
+    print("    -n|--nopoll                : Disable all polling")
+    print("    -b|--stream-size byte_size : Expose the stream data as EPICS",\
         "PVs. Only the first \"byte_size\" bytes will be exposed.",\
         "(Must be used with -e)")
+    print("    -f|--stream-type data_type : Stream data type (UInt16, Int16,",\
+        "UInt32 or Int32). Default is UInt16. (Must be used with -e and -b)")
     print("")
     print("Examples:")
     print("    %s -a IP_address                            :" % name,\
@@ -219,7 +221,7 @@ class DataBuffer(rogue.interfaces.stream.Slave):
 class LocalServer(pyrogue.Root):
 
     def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix,\
-        polling_en, stream_pv_size):
+        polling_en, stream_pv_size, stream_pv_type):
 
         try:
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
@@ -383,10 +385,11 @@ class LocalServer(pyrogue.Root):
                 # PVs for stream data, used on GDD-based EPICS server
                 if stream_pv_size:
 
-                    print("Enabling stream data on PVs (buffer size = %d bytes)" % stream_pv_size)
+                    print("Enabling stream data on PVs (buffer size = %d bytes, data type = %s)"\
+                        % (stream_pv_size,stream_pv_type))
 
                     for i in range(8):
-                        stream_slave = self.epics.createSlave(name="AMCc:Stream{}".format(i), maxSize=stream_pv_size, type="UInt16")
+                        stream_slave = self.epics.createSlave(name="AMCc:Stream{}".format(i), maxSize=stream_pv_size, type=stream_pv_type)
                         stream_fifo = rogue.interfaces.stream.Fifo(0, stream_pv_size)
                         stream_fifo._setSlave(stream_slave)
                         pyrogue.streamTap(fpga.stream.application(0x80+i), stream_fifo)
@@ -431,12 +434,14 @@ def main():
     server_mode = False
     polling_en = True
     stream_pv_size = 0
+    stream_pv_type = "UInt16"
+    stream_pv_valid_types = ["UInt16", "Int16", "UInt32", "Int32"]
 
     # Read Arguments
     try:
         opts, _ = getopt.getopt(sys.argv[1:],
-            "ha:sp:e:d:nb:",
-            ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll", "stream2pv="])
+            "ha:sp:e:d:nb:f:",
+            ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll", "stream-size=", "stream-type="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -445,21 +450,26 @@ def main():
         if opt in ("-h", "--help"):
             usage(sys.argv[0])
             sys.exit()
-        elif opt in ("-a", "--addr"):       # IP Address
+        elif opt in ("-a", "--addr"):        # IP Address
             ip_addr = arg
-        elif opt in ("-s", "--server"):     # Server mode
+        elif opt in ("-s", "--server"):      # Server mode
             server_mode = True
-        elif opt in ("-p", "--pyro"):       # Pyro group name
+        elif opt in ("-p", "--pyro"):        # Pyro group name
             group_name = arg
-        elif opt in ("-e", "--epics"):      # EPICS prefix
+        elif opt in ("-e", "--epics"):       # EPICS prefix
             epics_prefix = arg
-        elif opt in ("-n", "--nopoll"):     # Disable all polling
+        elif opt in ("-n", "--nopoll"):      # Disable all polling
             polling_en = False
-        elif opt in ("-b", "--stream2pv"):  # Stream data to PVs
+        elif opt in ("-b", "--stream-size"): # Stream data size (on PVs)
             try:
                 stream_pv_size = int(arg)
             except ValueError:
                 exit_message("ERROR: Invalid stream PV size")
+        elif opt in ("-f", "--stream-type"): # Stream data type (on PVs)
+            if arg in stream_pv_valid_types:
+                stream_pv_type = arg
+            else:
+                print("Invalid data type. Using %s instead" % stream_pv_type)
         elif opt in ("-d", "--defaults"):   # Default configuration file
             config_file = arg
 
@@ -489,7 +499,8 @@ def main():
         group_name=group_name,
         epics_prefix=epics_prefix,
         polling_en=polling_en,
-        stream_pv_size=stream_pv_size)
+        stream_pv_size=stream_pv_size,
+        stream_pv_type=stream_pv_type)
 
     # Stop server
     server.stop()
