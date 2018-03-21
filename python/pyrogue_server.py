@@ -272,7 +272,8 @@ class LocalServer(pyrogue.Root):
             if use_pcas:
                 if epics_prefix and stream_pv_size:
 
-                    print("Enabling stream data on PVs (buffer size = %d bytes)" % stream_pv_size)
+                    print("Enabling stream data on PVs (buffer size = %d points, data type = %s)"\
+                        % (stream_pv_size,stream_pv_type))
 
                     # Add data streams (0-7) to local variables so they are expose as PVs
                     # Also add PVs to select the data format
