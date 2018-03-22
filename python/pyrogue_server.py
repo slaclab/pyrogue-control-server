@@ -30,7 +30,7 @@ import rogue.interfaces.stream
 
 # Print the usage message
 def usage(name):
-    print("Usage: %s -a|--addr IP_address [-d|--defaults config_file]" % name,\
+    print("Usage: {} -a|--addr IP_address [-d|--defaults config_file]".format(name),\
         " [-s|--server] [-p|--pyro group_name] [-e|--epics prefix]",\
         " [-n|--nopoll] [-b|--stream-size byte_size] [-f|--stream-type data_type]",\
         " [-h|--help]")
@@ -51,11 +51,11 @@ def usage(name):
         "UInt32 or Int32). Default is UInt16. (Must be used with -e and -b)")
     print("")
     print("Examples:")
-    print("    %s -a IP_address                            :" % name,\
+    print("    {} -a IP_address                            :".format(name),\
         " Start a local rogue server, with GUI, without Pyro nor EPICS servers")
-    print("    %s -a IP_address -e prefix                  :" % name,\
+    print("    {} -a IP_address -e prefix                  :".format(name),\
         " Start a local rogue server, with GUI, with EPICS server")
-    print("    %s -a IP_address -e prefix -p group_name -s :" % name,\
+    print("    {} -a IP_address -e prefix -p group_name -s :".format(name),\
         " Start a local rogure server, without GUI, with Pyro and EPICS servers")
     print("")
 
@@ -94,7 +94,7 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         rogue.interfaces.stream.Slave.__init__(self)
         self._buf = [0] * size
 
-        # Supported data foramt and byte order
+        # Supported data format and byte order
         self._data_format_dict = {
             'B': 'unsigned 8-bit',
             'b': 'signed 8-bit',
@@ -133,8 +133,8 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         """
         data = bytearray(frame.getPayload())
         frame.read(data, 0)
-        self._buf = struct.unpack('%s%d%s' % (self._data_byte_order, \
-            (len(data)//self._data_size), self._data_format), data)
+        self._buf = struct.unpack('{}{}{}'.format((self._data_byte_order, \
+            (len(data)//self._data_size), self._data_format), data))
         self._callback()
 
     def set_callback(self, callback):
@@ -153,7 +153,7 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         """
         Function to get the current format string
         """
-        return '%s%s' % (self._data_byte_order, self._data_format)
+        return '{}{}'.format(self._data_byte_order, self._data_format)
 
     def get_data_format_list(self):
         """
@@ -243,8 +243,8 @@ class LocalServer(pyrogue.Root):
             if epics_prefix and stream_pv_size:
                 if use_pcas:
 
-                    print("Enabling stream data on PVs (buffer size = %d points, data type = %s)"\
-                        % (stream_pv_size,stream_pv_type))
+                    print("Enabling stream data on PVs (buffer size = {} points, data type = {})"\
+                        .format(stream_pv_size,stream_pv_type))
 
                     # Add data streams (0-7) to local variables so they are expose as PVs
                     # Also add PVs to select the data format
@@ -265,8 +265,8 @@ class LocalServer(pyrogue.Root):
 
                         # Variable to read the stream data
                         stream_var = pyrogue.LocalVariable(
-                            name='Stream%d' % i,
-                            description='Stream %d' % i,
+                            name='Stream{}'.format(i),
+                            description='Stream {}'.format(i),
                             mode='RO',
                             value=0,
                             localGet=data_buffer.read,
@@ -278,7 +278,7 @@ class LocalServer(pyrogue.Root):
 
                         # Variable to set the data format
                         data_format_var = pyrogue.LocalVariable(
-                            name='StreamDataFormat%d' % i,
+                            name='StreamDataFormat{}'.format(i),
                             description='Type of data being unpacked',
                             mode='RW',
                             value=0,
@@ -289,7 +289,7 @@ class LocalServer(pyrogue.Root):
 
                         # Variable to set the data byte order
                         byte_order_var = pyrogue.LocalVariable(
-                            name='StreamDataByteOrder%d' % i,
+                            name='StreamDataByteOrder{}'.format(i),
                             description='Byte order of data being unpacked',
                             mode='RW',
                             value=0,
@@ -300,7 +300,7 @@ class LocalServer(pyrogue.Root):
 
                         # Variable to read the data format string
                         format_string_var = pyrogue.LocalVariable(
-                            name='StreamDataFormatString%d' % i,
+                            name='StreamDataFormatString{}'.format(i),
                             description='Format string used to unpack the data',
                             mode='RO',
                             value=0,
@@ -335,7 +335,7 @@ class LocalServer(pyrogue.Root):
             if group_name:
                 # Start with Pyro4 server
                 host_name = get_host_name()
-                print("Starting rogue server with Pyro using group name \"%s\"" % group_name)
+                print("Starting rogue server with Pyro using group name \"{}\"".format(group_name))
                 self.start(pollEn=polling_en, pyroGroup=group_name, pyroHost=host_name, pyroNs=None)
             else:
                 # Start without Pyro4 server
@@ -354,19 +354,19 @@ class LocalServer(pyrogue.Root):
             print("")
             print("FPGA image build information:")
             print("===================================")
-            print("BuildStamp              : %s" % \
-                self.FpgaTopLevel.AmcCarrierCore.AxiVersion.BuildStamp.get())
-            print("FPGA Version            : 0x%x" % \
-                self.FpgaTopLevel.AmcCarrierCore.AxiVersion.FpgaVersion.get())
-            print("Git hash                : 0x%x" % \
-                self.FpgaTopLevel.AmcCarrierCore.AxiVersion.GitHash.get())
+            print("BuildStamp              : {}"\
+                .format(self.FpgaTopLevel.AmcCarrierCore.AxiVersion.BuildStamp.get()))
+            print("FPGA Version            : 0x{:x}"\
+                .format(self.FpgaTopLevel.AmcCarrierCore.AxiVersion.FpgaVersion.get()))
+            print("Git hash                : 0x{:x}"\
+                .format(self.FpgaTopLevel.AmcCarrierCore.AxiVersion.GitHash.get()))
         except AttributeError as attr_error:
-            print("Attibute error: %s" % attr_error)
+            print("Attibute error: {}".format(attr_error))
         print("")
 
         # Start the EPICS server
         if epics_prefix:
-            print("Starting EPICS server using prefix \"%s\"" % epics_prefix)
+            print("Starting EPICS server using prefix \"{}\"".format(epics_prefix))
 
             # Choose the appropiate epics module:
             if use_pcas:
@@ -377,8 +377,8 @@ class LocalServer(pyrogue.Root):
                 # PVs for stream data, used on GDD-based EPICS server
                 if stream_pv_size:
 
-                    print("Enabling stream data on PVs (buffer size = %d points, data type = %s)"\
-                        % (stream_pv_size,stream_pv_type))
+                    print("Enabling stream data on PVs (buffer size = {} points, data type = {})"\
+                        .format(stream_pv_size,stream_pv_type))
 
                     for i in range(8):
                         stream_slave = self.epics.createSlave(name="AMCc:Stream{}".format(i), maxSize=stream_pv_size, type=stream_pv_type)
@@ -414,7 +414,7 @@ class LocalServer(pyrogue.Root):
             print('No default configuration file was specified...')
             return
 
-        print('Setting defaults from file %s' % self.config_file)
+        print('Setting defaults from file {}'.format(self.config_file))
         self.ReadConfig(self.config_file)
 
     def stop(self):
@@ -468,7 +468,7 @@ if __name__ == "__main__":
             if arg in stream_pv_valid_types:
                 stream_pv_type = arg
             else:
-                print("Invalid data type. Using %s instead" % stream_pv_type)
+                print("Invalid data type. Using {} instead".format(stream_pv_type))
         elif opt in ("-d", "--defaults"):   # Default configuration file
             config_file = arg
 
@@ -494,7 +494,7 @@ if __name__ == "__main__":
     try:
         from FpgaTopLevel import FpgaTopLevel
     except ImportError as ie:
-        print("Error importing FpgaTopLevel: %s" % ie)
+        print("Error importing FpgaTopLevel: {}".format(ie))
         exit()
 
     # If EPICS server is enable, import the epics module
