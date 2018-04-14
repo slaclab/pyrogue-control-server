@@ -73,19 +73,13 @@ function setEnv(prefix)
     %%% End of setting environmental variables               %%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    % Send read All command
-    ReadAll
-
-    % Set default configuration
-    setDefaults
-
     % Send ReadAll command
     ReadAll
 
     % Print Build information
     disp('Firmware image information:')
     disp('==================================================')
-    disp(['Build Stamp     = ' char(lcaGet(buildStampPV))])
+    disp(['Build Stamp     = ' deblank(char(lcaGet(buildStampPV)))])
     disp(['FPGA Version    = ' num2str(lcaGet(fpgaVersionPV))])
-    disp(['Git Hash        = ' num2str(lcaGet(gitHashPV))])
+    disp(['Git Hash        = ' deblank(char(lcaGet(gitHashPV)))])
     disp(['Up Time Counter = ' num2str(lcaGet(upTimeCntPV))])

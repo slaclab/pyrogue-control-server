@@ -22,18 +22,19 @@ function setBufferSize(size)
         lcaPut(DMBufferSizePV, size)
         
         % Change Waveform Enginee Buffer size
-        sa = typecast(int32(lcaGet([WEBStartAddrPV'])),'uint32');
+        sa = cellfun(@(x)sscanf(x,'%x'), deblank(mat2cell(char(lcaGet(WEBStartAddrPV')), ones(1,length(WEBStartAddrPV)))));
         ea = sa + 4*size;
-        lcaPut([WEBEndAddrPV'], double(typecast(uint32(ea), 'int32')))
-        
+
+        lcaPut(WEBEndAddrPV', double(deblank(char(cellfun(@(x)sprintf('0x%08X', x), mat2cell(ea, ones(1,length(WEBStartAddrPV))),'UniformOutput',false)))));
+
         % Show current sizes:
         disp('New DaqMux Data Buffer Size (hex):')
         disp(dec2hex(lcaGet(DMBufferSizePV)))
         disp(' ')
         disp('New Waveform Engine Buffer Start Addrs (hex):')
-        disp(dec2hex(typecast(int32(lcaGet([WEBStartAddrPV'])),'uint32')))
+        disp(dec2hex(cellfun(@(x)sscanf(x,'%x'), deblank(mat2cell(char(lcaGet(WEBStartAddrPV')), ones(1,length(WEBStartAddrPV)))))))
         disp(' ')
         disp('New Waveform Engine Buffer End Addrs (hex):')
-        disp(dec2hex(typecast(int32(lcaGet([WEBEndAddrPV'])),'uint32')))
+        disp(dec2hex(cellfun(@(x)sscanf(x,'%x'), deblank(mat2cell(char(lcaGet(WEBEndAddrPV')), ones(1,length(WEBStartAddrPV)))))))
         disp(' ')
     end
