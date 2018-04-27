@@ -33,7 +33,7 @@ def usage(name):
     print("Usage: {} -a|--addr IP_address [-d|--defaults config_file]".format(name),\
         " [-s|--server] [-p|--pyro group_name] [-e|--epics prefix]",\
         " [-n|--nopoll] [-b|--stream-size byte_size] [-f|--stream-type data_type]",\
-        " [-h|--help]")
+        " [-d|--commType comm_type] [-h|--help]")
     print("    -h||--help                 : Show this message")
     print("    -a|--addr IP_address       : FPGA IP address")
     print("    -d|--defaults config_file  : Default configuration file")
@@ -44,6 +44,10 @@ def usage(name):
     print("    -s|--server                : Server mode, without staring",\
         "a GUI (Must be used with -p and/or -e)")
     print("    -n|--nopoll                : Disable all polling")
+    print("    -c|--commType comm_type    : Communication type with the FPGA",\
+        "(default to \"eth-rssi-non-interleaved\"")
+    print("    -l|--slot                  : ATCA slot number (only needed with"\
+        "PCIe). Supported options are 2 to 7")
     print("    -b|--stream-size data_size : Expose the stream data as EPICS",\
         "PVs. Only the first \"data_size\" points will be exposed.",\
         "(Must be used with -e)")
@@ -206,7 +210,7 @@ class DataBuffer(rogue.interfaces.stream.Slave):
 class LocalServer(pyrogue.Root):
 
     def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix,\
-        polling_en, stream_pv_size, stream_pv_type):
+        polling_en, comm_type, pcie_rssi_link, stream_pv_size, stream_pv_type):
 
         try:
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
@@ -216,15 +220,23 @@ class LocalServer(pyrogue.Root):
             self.add(stm_data_writer)
 
             # Instantiate Fpga top level
-            fpga = FpgaTopLevel(ipAddr=ip_addr)
+            # fpga = FpgaTopLevel(ipAddr=ip_addr)
+            fpga = FpgaTopLevel(ipAddr=ip_addr,
+                commType=comm_type,
+                pcieRssiLink=pcie_rssi_link)
 
             # Add devices
             self.add(fpga)
 
-            # Add data streams (0-7) to file channels (0-7)
-            for i in range(8):
-                pyrogue.streamConnect(fpga.stream.application(0x80 + i),
-                                      stm_data_writer.getChannel(i))
+            if comm_type == "eth-rssi-non-interleaved":
+                # Add data streams (0-7) to file channels (0-7)
+                for i in range(8):
+                   pyrogue.streamConnect(fpga.stream.application(0x80 + i),
+                    stm_data_writer.getChannel(i))
+            elif comm_type == "pcie-rssi-interleaved":
+                print("Adding data streams to file writter")
+                pyrogue.streamConnect(fpga.stream_vc1,
+                    stm_data_writer.getChannel(0))
 
             # Set global timeout
             self.setTimeout(timeout=1)
@@ -261,7 +273,11 @@ class LocalServer(pyrogue.Root):
                         stream_fifo = rogue.interfaces.stream.Fifo(0, fifo_size)
                         data_buffer = DataBuffer(size=stream_pv_size, data_type=stream_pv_type)
                         stream_fifo._setSlave(data_buffer)
-                        pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
+
+                        if comm_type == "eth-rssi-non-interleaved":
+                            pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
+                        elif comm_type == "pcie-rssi-interleaved":
+                            pyrogue.streamTap(fpga.stream_vc1, stream_fifo)
 
                         # Variable to read the stream data
                         stream_var = pyrogue.LocalVariable(
@@ -391,7 +407,10 @@ class LocalServer(pyrogue.Root):
 
                         stream_fifo = rogue.interfaces.stream.Fifo(0, fifo_size)
                         stream_fifo._setSlave(stream_slave)
-                        pyrogue.streamTap(fpga.stream.application(0x80+i), stream_fifo)
+                        if comm_type == "eth-rssi-non-interleaved":
+                            pyrogue.streamTap(fpga.stream.application(0x80+i), stream_fifo)
+                        elif comm_type == "pcie-rssi-interleaved":
+                            pyrogue.streamTap(fpga.stream_vc1, stream_fifo)
 
             self.epics.start()
 
@@ -435,12 +454,17 @@ if __name__ == "__main__":
     stream_pv_size = 0
     stream_pv_type = "UInt16"
     stream_pv_valid_types = ["UInt16", "Int16", "UInt32", "Int32"]
+    comm_type = "eth-rssi-non-interleaved";
+    comm_type_valid_types = ["eth-rssi-non-interleaved", "pcie-rssi-interleaved"]
+    slot_number=0
+    pcie_rssi_link=0
 
     # Read Arguments
     try:
         opts, _ = getopt.getopt(sys.argv[1:],
-            "ha:sp:e:d:nb:f:",
-            ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll", "stream-size=", "stream-type="])
+            "ha:sp:e:d:nb:f:c:l:",
+            ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll",
+            "stream-size=", "stream-type=", "commType=", "slot="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -471,21 +495,38 @@ if __name__ == "__main__":
                 print("Invalid data type. Using {} instead".format(stream_pv_type))
         elif opt in ("-d", "--defaults"):   # Default configuration file
             config_file = arg
+        elif opt in ("-c", "--commType"):   # Communication type
+            if arg in comm_type_valid_types:
+                comm_type = arg
+            else:
+                print("Invalid communication type. Valid choises are:")
+                for c in comm_type_valid_types:
+                    print("  - \"{}\"".format(c))
+                exit_message("ERROR: Invalid communication type")
+        elif opt in ("-l", "--slot"):       # Slot number
+            slot_number = int(arg)
 
-    try:
-        socket.inet_aton(ip_addr)
-    except socket.error:
-        exit_message("ERROR: Invalid IP Address.")
+    # Checl connection with the board if using eth communication
+    if comm_type == "eth-rssi-non-interleaved":
+        try:
+            socket.inet_aton(ip_addr)
+        except socket.error:
+            exit_message("ERROR: Invalid IP Address.")
 
-    print("")
-    print("Trying to ping the FPGA...")
-    try:
-        dev_null = open(os.devnull, 'w')
-        subprocess.check_call(["ping", "-c2", ip_addr], stdout=dev_null, stderr=dev_null)
-        print("    FPGA is online")
         print("")
-    except subprocess.CalledProcessError:
-        exit_message("    ERROR: FPGA can't be reached!")
+        print("Trying to ping the FPGA...")
+        try:
+           dev_null = open(os.devnull, 'w')
+           subprocess.check_call(["ping", "-c2", ip_addr], stdout=dev_null, stderr=dev_null)
+           print("    FPGA is online")
+           print("")
+        except subprocess.CalledProcessError:
+           exit_message("    ERROR: FPGA can't be reached!")
+    elif (comm_type == "pcie-rssi-interleaved"):
+        if slot_number in range(2, 7):
+            pcie_rssi_link = slot_number - 2
+        else:
+            exit_message("ERROR: Invalid slot number. Must be between 2 and 7")
 
     if server_mode and not (group_name or epics_prefix):
         exit_message("    ERROR: Can not start in server mode without Pyro or EPICS server")
@@ -530,6 +571,8 @@ if __name__ == "__main__":
         group_name=group_name,
         epics_prefix=epics_prefix,
         polling_en=polling_en,
+        comm_type=comm_type,
+        pcie_rssi_link=pcie_rssi_link,
         stream_pv_size=stream_pv_size,
         stream_pv_type=stream_pv_type)
 
