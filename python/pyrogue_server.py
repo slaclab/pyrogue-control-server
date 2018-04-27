@@ -33,7 +33,7 @@ def usage(name):
     print("Usage: {} -a|--addr IP_address [-d|--defaults config_file]".format(name),\
         " [-s|--server] [-p|--pyro group_name] [-e|--epics prefix]",\
         " [-n|--nopoll] [-b|--stream-size byte_size] [-f|--stream-type data_type]",\
-        " [-d|--commType comm_type] [-h|--help]")
+        " [-d|--commType comm_type] [-l|--slot slot_number] [-h|--help]")
     print("    -h||--help                 : Show this message")
     print("    -a|--addr IP_address       : FPGA IP address")
     print("    -d|--defaults config_file  : Default configuration file")
@@ -46,7 +46,7 @@ def usage(name):
     print("    -n|--nopoll                : Disable all polling")
     print("    -c|--commType comm_type    : Communication type with the FPGA",\
         "(default to \"eth-rssi-non-interleaved\"")
-    print("    -l|--slot                  : ATCA slot number (only needed with"\
+    print("    -l|--slot slot_number      : ATCA slot number (only needed with"\
         "PCIe). Supported options are 2 to 7")
     print("    -b|--stream-size data_size : Expose the stream data as EPICS",\
         "PVs. Only the first \"data_size\" points will be exposed.",\
