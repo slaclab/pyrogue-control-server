@@ -443,6 +443,58 @@ class LocalServer(pyrogue.Root):
             self.epics.stop()
         super(LocalServer, self).stop()
 
+def setupPcieCard(open, link):
+
+    if open:
+        print("Opening PCIe RRSI link {}".format(link))
+    else:
+        print("Closing PCIe RRSI link {}".format(link))
+
+    # Import PCIe related modules
+    import rogue.hardware.axi
+    import SmurfKcu1500RssiOffload as smurf
+
+    # Build the device
+    pcie = pyrogue.Root(name='pcie',description='')
+    memMap = rogue.hardware.axi.AxiMemMap('/dev/datadev_0')
+    pcie.add(smurf.Core(memBase=memMap))
+    pcie.start(pollEn='False',initRead='True')
+
+    # Setting the bypass RSSI mask
+    mask = pcie.Core.EthLane[0].EthConfig.BypRssi.get()
+
+    if open:
+        mask ^= (1<<link)
+    else:
+        mask |= (1<<link)
+
+    pcie.Core.EthLane[0].EthConfig.BypRssi.set(mask)
+
+    # Setup udp client port number
+    if open:
+        pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8198)
+    else:
+        pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8192)
+    # Setting the Open and close connection registers
+    pcie.Core.EthLane[0].RssiServer[link].CloseConn.set(int(not open))
+    pcie.Core.EthLane[0].RssiServer[link].OpenConn.set(int(open))
+    pcie.Core.EthLane[0].RssiServer[link].HeaderChksumEn.set(1)
+
+    # Printt register status after setting them
+    print("PCIe register status:")
+    print("EthConfig.BypRssi = 0x{:02X}".format(
+        pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
+    print("UdpClient[{}].ClientRemotePort = {}".format(link,
+        pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.get()))
+    print("RssiServer[{}].CloseConn = {}".format(link,
+        pcie.Core.EthLane[0].RssiServer[link].CloseConn.get()))
+    print("RssiServer[{}].OpenConn = {}".format(link,
+        pcie.Core.EthLane[0].RssiServer[link].OpenConn.get()))
+    print("")
+
+    # Close device
+    pcie.stop()
+
 # Main body
 if __name__ == "__main__":
     ip_addr = ""
@@ -525,6 +577,7 @@ if __name__ == "__main__":
     elif "pcie-" in comm_type:
         if slot_number in range(2, 7):
             pcie_rssi_link = slot_number - 2
+            setupPcieCard(open=True, link=pcie_rssi_link)
         else:
             exit_message("ERROR: Invalid slot number. Must be between 2 and 7")
 
@@ -578,5 +631,9 @@ if __name__ == "__main__":
 
     # Stop server
     server.stop()
+
+    # Close the PCIe link before exit
+    if "pcie-" in comm_type:
+        setupPcieCard(open=False, link=pcie_rssi_link)
 
     print("")
