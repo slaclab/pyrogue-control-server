@@ -2,3 +2,4 @@
 setup_epics.sh
 setup_labca.sh
 setup_rogue.sh
+setup_pcie.sh
