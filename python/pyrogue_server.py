@@ -228,7 +228,7 @@ class LocalServer(pyrogue.Root):
             # Add devices
             self.add(fpga)
 
-            if comm_type == "eth-rssi-non-interleaved":
+            if "eth-" in comm_type:
                 # Add data streams (0-7) to file channels (0-7)
                 for i in range(8):
                    pyrogue.streamConnect(fpga.stream.application(0x80 + i),
@@ -274,7 +274,7 @@ class LocalServer(pyrogue.Root):
                         data_buffer = DataBuffer(size=stream_pv_size, data_type=stream_pv_type)
                         stream_fifo._setSlave(data_buffer)
 
-                        if comm_type == "eth-rssi-non-interleaved":
+                        if "eth-" in comm_type:
                             pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
                         elif comm_type == "pcie-rssi-interleaved":
                             pyrogue.streamTap(fpga.stream_vc1, stream_fifo)
@@ -407,7 +407,7 @@ class LocalServer(pyrogue.Root):
 
                         stream_fifo = rogue.interfaces.stream.Fifo(0, fifo_size)
                         stream_fifo._setSlave(stream_slave)
-                        if comm_type == "eth-rssi-non-interleaved":
+                        if "eth-" in comm_type:
                             pyrogue.streamTap(fpga.stream.application(0x80+i), stream_fifo)
                         elif comm_type == "pcie-rssi-interleaved":
                             pyrogue.streamTap(fpga.stream_vc1, stream_fifo)
@@ -455,7 +455,7 @@ if __name__ == "__main__":
     stream_pv_type = "UInt16"
     stream_pv_valid_types = ["UInt16", "Int16", "UInt32", "Int32"]
     comm_type = "eth-rssi-non-interleaved";
-    comm_type_valid_types = ["eth-rssi-non-interleaved", "pcie-rssi-interleaved"]
+    comm_type_valid_types = ["eth-rssi-non-interleaved", "eth-rssi-interleaved", "pcie-rssi-interleaved"]
     slot_number=0
     pcie_rssi_link=0
 
@@ -506,8 +506,8 @@ if __name__ == "__main__":
         elif opt in ("-l", "--slot"):       # Slot number
             slot_number = int(arg)
 
-    # Checl connection with the board if using eth communication
-    if comm_type == "eth-rssi-non-interleaved":
+    # Check connection with the board if using eth communication
+    if "eth-" in comm_type:
         try:
             socket.inet_aton(ip_addr)
         except socket.error:
@@ -522,7 +522,7 @@ if __name__ == "__main__":
            print("")
         except subprocess.CalledProcessError:
            exit_message("    ERROR: FPGA can't be reached!")
-    elif (comm_type == "pcie-rssi-interleaved"):
+    elif "pcie-" in comm_type:
         if slot_number in range(2, 7):
             pcie_rssi_link = slot_number - 2
         else:
