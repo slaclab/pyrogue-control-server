@@ -23,6 +23,7 @@ import os
 import subprocess
 import time
 import struct
+from packaging import version
 
 import pyrogue
 import pyrogue.utilities.fileio
@@ -596,7 +597,7 @@ if __name__ == "__main__":
         use_pcas = True
         try:
             ver = pyrogue.__version__
-            if (ver > '2.6.0'):
+            if (version.parse(ver) > version.parse('2.6.0')):
                 use_pcas = False
         except AttributeError:
             pass
