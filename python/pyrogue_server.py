@@ -54,6 +54,8 @@ def usage(name):
         "(Must be used with -e)")
     print("    -f|--stream-type data_type : Stream data type (UInt16, Int16,",\
         "UInt32 or Int32). Default is UInt16. (Must be used with -e and -b)")
+    print("    -u|--dump-pvs file_name    : Dump the PV list to \"file_name\".",\
+        "(Must be used with -e)")
     print("")
     print("Examples:")
     print("    {} -a IP_address                            :".format(name),\
@@ -211,7 +213,8 @@ class DataBuffer(rogue.interfaces.stream.Slave):
 class LocalServer(pyrogue.Root):
 
     def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix,\
-        polling_en, comm_type, pcie_rssi_link, stream_pv_size, stream_pv_type):
+        polling_en, comm_type, pcie_rssi_link, stream_pv_size, stream_pv_type,\
+        pv_dump_file):
 
         try:
             pyrogue.Root.__init__(self, name='AMCc', description='AMC Carrier')
@@ -412,6 +415,29 @@ class LocalServer(pyrogue.Root):
 
             self.epics.start()
 
+            # Dump the PV list to the especified file
+            if pv_dump_file:
+                try:
+                    # Try to open the output file
+                    f = open(pv_dump_file, "w")
+                except IOError:
+                    print("Could not open the PV dump file \"{}\"".format(pv_dump_file))
+                else:
+                    with f:
+                        print("Dumping PV list to \"{}\"...".format(pv_dump_file))
+                        try:
+                            try:
+                                # Redirect the stdout to the output file momentarily
+                                original_stdout, sys.stdout = sys.stdout, f
+                                self.epics.dump()
+                            finally:
+                                sys.stdout = original_stdout
+
+                            print("Done!")
+                        except:
+                            # Capture error from epics.dump() if any
+                            print("Errors were found during epics.dump()")
+
         # If no in server Mode, start the GUI
         if not server_mode:
             create_gui(self)
@@ -508,13 +534,14 @@ if __name__ == "__main__":
     comm_type_valid_types = ["eth-rssi-non-interleaved", "eth-rssi-interleaved", "pcie-rssi-interleaved"]
     slot_number=0
     pcie_rssi_link=0
+    pv_dump_file= ""
 
     # Read Arguments
     try:
         opts, _ = getopt.getopt(sys.argv[1:],
-            "ha:sp:e:d:nb:f:c:l:",
+            "ha:sp:e:d:nb:f:c:l:u:",
             ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll",
-            "stream-size=", "stream-type=", "commType=", "slot="])
+            "stream-size=", "stream-type=", "commType=", "slot=", "dump-pvs="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -555,6 +582,8 @@ if __name__ == "__main__":
                 exit_message("ERROR: Invalid communication type")
         elif opt in ("-l", "--slot"):       # Slot number
             slot_number = int(arg)
+        elif opt in ("-u", "--dump-pvs"):   # Dump PV file
+            pv_dump_fule = arg
 
     # Check connection with the board if using eth communication
     if "eth-" in comm_type:
@@ -625,7 +654,8 @@ if __name__ == "__main__":
         comm_type=comm_type,
         pcie_rssi_link=pcie_rssi_link,
         stream_pv_size=stream_pv_size,
-        stream_pv_type=stream_pv_type)
+        stream_pv_type=stream_pv_type,
+        pv_dump_file=pv_dump_file)
 
     # Stop server
     server.stop()
