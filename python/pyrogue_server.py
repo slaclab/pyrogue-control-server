@@ -583,7 +583,7 @@ if __name__ == "__main__":
         elif opt in ("-l", "--slot"):       # Slot number
             slot_number = int(arg)
         elif opt in ("-u", "--dump-pvs"):   # Dump PV file
-            pv_dump_fule = arg
+            pv_dump_file = arg
 
     # Check connection with the board if using eth communication
     if "eth-" in comm_type:
