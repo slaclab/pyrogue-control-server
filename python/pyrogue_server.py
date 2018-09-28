@@ -68,7 +68,7 @@ def usage(name):
 
 # Cretae gui interface
 def create_gui(root):
-    app_top = PyQt.QApplication(sys.argv)
+    app_top = pyrogue.gui.application(sys.argv)
     gui_top = pyrogue.gui.GuiTop(group='GuiTop')
     gui_top.resize(800, 1000)
     gui_top.addTree(root)
@@ -640,13 +640,6 @@ if __name__ == "__main__":
 
     # Import the QT and gui modules if not in server mode
     if not server_mode:
-        try:
-            import PyQt5.QtWidgets as PyQt
-            print("Using PyQt5")
-        except ImportError:
-            import PyQt4.QtGui as PyQt
-            print("Using PyQt4")
-
         import pyrogue.gui
 
     # Start pyRogue server
