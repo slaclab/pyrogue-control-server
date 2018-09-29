@@ -500,9 +500,9 @@ def setupPcieCard(open, link):
     else:
         pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8192)
     # Setting the Open and close connection registers
-    pcie.Core.EthLane[0].RssiServer[link].CloseConn.set(int(not open))
-    pcie.Core.EthLane[0].RssiServer[link].OpenConn.set(int(open))
-    pcie.Core.EthLane[0].RssiServer[link].HeaderChksumEn.set(1)
+    pcie.Core.EthLane[0].RssiClient[link].CloseConn.set(int(not open))
+    pcie.Core.EthLane[0].RssiClient[link].OpenConn.set(int(open))
+    pcie.Core.EthLane[0].RssiClient[link].HeaderChksumEn.set(1)
 
     # Printt register status after setting them
     print("PCIe register status:")
@@ -510,10 +510,10 @@ def setupPcieCard(open, link):
         pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
     print("UdpClient[{}].ClientRemotePort = {}".format(link,
         pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.get()))
-    print("RssiServer[{}].CloseConn = {}".format(link,
-        pcie.Core.EthLane[0].RssiServer[link].CloseConn.get()))
-    print("RssiServer[{}].OpenConn = {}".format(link,
-        pcie.Core.EthLane[0].RssiServer[link].OpenConn.get()))
+    print("RssiClient[{}].CloseConn = {}".format(link,
+        pcie.Core.EthLane[0].RssiClient[link].CloseConn.get()))
+    print("RssiClient[{}].OpenConn = {}".format(link,
+        pcie.Core.EthLane[0].RssiClient[link].OpenConn.get()))
     print("")
 
     # Close device
