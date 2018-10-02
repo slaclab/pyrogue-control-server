@@ -479,7 +479,7 @@ def setupPcieCard(open, link, ip_addr):
     mask = pcie.Core.EthLane[0].EthConfig.BypRssi.get()
 
     if open:
-        mask ^= (1<<link)
+        mask &= ~(1<<link)
     else:
         mask |= (1<<link)
 
