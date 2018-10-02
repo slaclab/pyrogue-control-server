@@ -232,15 +232,12 @@ class LocalServer(pyrogue.Root):
             # Add devices
             self.add(fpga)
 
-            if "eth-" in comm_type:
-                # Add data streams (0-7) to file channels (0-7)
-                for i in range(8):
-                   pyrogue.streamConnect(fpga.stream.application(0x80 + i),
-                    stm_data_writer.getChannel(i))
-            elif comm_type == "pcie-rssi-interleaved":
-                print("Adding data streams to file writter")
-                pyrogue.streamConnect(fpga.stream_vc1,
-                    stm_data_writer.getChannel(0))
+            # Add data streams (0-7) to file channels (0-7)
+            for i in range(8):
+                pyrogue.streamConnect(fpga.stream.application(0x80 + i),
+                 stm_data_writer.getChannel(i))
+                pyrogue.streamConnect(fpga.stream.application(0xC0 + i),
+                 stm_data_writer.getChannel(8+i))
 
             # Run control for streaming interfaces
             self.add(pyrogue.RunControl(
@@ -275,10 +272,7 @@ class LocalServer(pyrogue.Root):
                         data_buffer = DataBuffer(size=stream_pv_size, data_type=stream_pv_type)
                         stream_fifo._setSlave(data_buffer)
 
-                        if "eth-" in comm_type:
-                            pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
-                        elif comm_type == "pcie-rssi-interleaved":
-                            pyrogue.streamTap(fpga.stream_vc1, stream_fifo)
+                        pyrogue.streamTap(fpga.stream.application(0x80 + i), stream_fifo)
 
                         # Variable to read the stream data
                         stream_var = pyrogue.LocalVariable(
@@ -408,10 +402,7 @@ class LocalServer(pyrogue.Root):
 
                         stream_fifo = rogue.interfaces.stream.Fifo(0, fifo_size)
                         stream_fifo._setSlave(stream_slave)
-                        if "eth-" in comm_type:
-                            pyrogue.streamTap(fpga.stream.application(0x80+i), stream_fifo)
-                        elif comm_type == "pcie-rssi-interleaved":
-                            pyrogue.streamTap(fpga.stream_vc1, stream_fifo)
+                        pyrogue.streamTap(fpga.stream.application(0x80+i), stream_fifo)
 
             self.epics.start()
 
@@ -602,7 +593,7 @@ if __name__ == "__main__":
         except subprocess.CalledProcessError:
            exit_message("    ERROR: FPGA can't be reached!")
     elif "pcie-" in comm_type:
-        if slot_number in range(2, 7):
+        if slot_number in range(2, 8):
             pcie_rssi_link = slot_number - 2
             setupPcieCard(open=True, link=pcie_rssi_link)
         else:
