@@ -593,7 +593,7 @@ if __name__ == "__main__":
         except subprocess.CalledProcessError:
            exit_message("    ERROR: FPGA can't be reached!")
     elif "pcie-" in comm_type:
-        if slot_number in range(2, 7):
+        if slot_number in range(2, 8):
             pcie_rssi_link = slot_number - 2
             setupPcieCard(open=True, link=pcie_rssi_link)
         else:
