@@ -500,6 +500,8 @@ def setupPcieCard(open, link, ip_addr):
     print("PCIe register status:")
     print("EthConfig.BypRssi = 0x{:02X}".format(
         pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
+    print("UdpClient[{}].ClientRemoteIp = {}".format(link,
+        pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.get()))
     print("UdpClient[{}].ClientRemotePort = {}".format(link,
         pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.get()))
     print("RssiClient[{}].CloseConn = {}".format(link,
