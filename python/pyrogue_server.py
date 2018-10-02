@@ -460,11 +460,6 @@ class LocalServer(pyrogue.Root):
 
 def setupPcieCard(open, link, ip_addr):
 
-    if open:
-        print("Opening PCIe RSSI link {}".format(link))
-    else:
-        print("Closing PCIe RSSI link {}".format(link))
-
     # Import PCIe related modules
     import rogue.hardware.axi
     import SmurfKcu1500RssiOffload as smurf
@@ -475,23 +470,31 @@ def setupPcieCard(open, link, ip_addr):
     pcie.add(smurf.Core(memBase=memMap))
     pcie.start(pollEn='False',initRead='True')
 
-    # Setting the bypass RSSI mask
+    # Read the bypass RSSI mask
     mask = pcie.Core.EthLane[0].EthConfig.BypRssi.get()
 
     if open:
+        print("Opening PCIe RSSI link {}".format(link))
+
+        # Clear the RSSI bypass bit
         mask &= ~(1<<link)
-    else:
-        mask |= (1<<link)
 
-    pcie.Core.EthLane[0].EthConfig.BypRssi.set(mask)
-
-    # Setup udp client port number
-    if open:
+        # Setup udp client IP address and port number
         pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.set(ip_addr)
         pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8198)
     else:
+        print("Closing PCIe RSSI link {}".format(link))
+
+        # Set the RSSI bypass bit
+        mask |= (1<<link)
+
+        # Setup udp client port number
         pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8192)
-    # Setting the Open and close connection registers
+
+    # Set the bypass RSSi mask
+    pcie.Core.EthLane[0].EthConfig.BypRssi.set(mask)
+
+    # Set the Open and close connection registers
     pcie.Core.EthLane[0].RssiClient[link].CloseConn.set(int(not open))
     pcie.Core.EthLane[0].RssiClient[link].OpenConn.set(int(open))
     pcie.Core.EthLane[0].RssiClient[link].HeaderChksumEn.set(1)
