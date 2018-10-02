@@ -24,6 +24,7 @@ import subprocess
 import time
 import struct
 from packaging import version
+from pathlib import Path
 
 import pyrogue
 import pyrogue.utilities.fileio
@@ -532,6 +533,7 @@ if __name__ == "__main__":
     comm_type_valid_types = ["eth-rssi-non-interleaved", "eth-rssi-interleaved", "pcie-rssi-interleaved"]
     pcie_rssi_link=0
     pv_dump_file= ""
+    pcie_dev=Path("/dev/datadev_0")
 
     # Read Arguments
     try:
@@ -604,6 +606,12 @@ if __name__ == "__main__":
         except subprocess.CalledProcessError:
            exit_message("    ERROR: FPGA can't be reached!")
     elif "pcie-" in comm_type:
+
+        # Verify is PCIe device exists
+        if not pcie_dev.exists():
+            exit_message("ERROR: PCIe device {} does not exist.".format(pcie_dev))
+
+        # Verify if RSSI link is valid
         if pcie_rssi_link in range(0, 6):
             setupPcieCard(open=True, link=pcie_rssi_link, ip_addr=ip_addr)
         else:
