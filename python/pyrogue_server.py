@@ -605,6 +605,11 @@ if __name__ == "__main__":
            print("")
         except subprocess.CalledProcessError:
            exit_message("    ERROR: FPGA can't be reached!")
+
+        # If the PCIe device exist, and we are using ETH communication, disable it.
+        if pcie_dev.exists():
+            setupPcieCard(open=False, link=pcie_rssi_link)
+
     elif "pcie-" in comm_type:
 
         # Verify is PCIe device exists
