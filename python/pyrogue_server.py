@@ -657,6 +657,6 @@ if __name__ == "__main__":
 
     # Close the PCIe link before exit
     if "pcie-" in comm_type:
-        setupPcieCard(open=False, link=pcie_rssi_linki, ip_addr="")
+        setupPcieCard(open=False, link=pcie_rssi_link, ip_addr="")
 
     print("")
