@@ -458,7 +458,7 @@ class LocalServer(pyrogue.Root):
             self.epics.stop()
         super(LocalServer, self).stop()
 
-def setupPcieCard(open, link, ip_addr):
+def setupPcieCard(open, link, ip_addr=""):
 
     # Import PCIe related modules
     import rogue.hardware.axi
@@ -480,7 +480,8 @@ def setupPcieCard(open, link, ip_addr):
         mask &= ~(1<<link)
 
         # Setup udp client IP address and port number
-        pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.set(ip_addr)
+        if ip_addr:
+            pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.set(ip_addr)
         pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8198)
     else:
         print("Closing PCIe RSSI link {}".format(link))
@@ -582,16 +583,17 @@ if __name__ == "__main__":
             pv_dump_file = arg
 
     # Verify if IP address is valid
-    if not ip_addr:
-        exit_message("ERROR: Must specify IP Address.")
-    else:
+    if ip_addr:
         try:
-            socket.inet_aton(ip_addr)
+            socket.inet_pton(socket.AF_INET, ip_addr)
         except socket.error:
             exit_message("ERROR: Invalid IP Address.")
 
     # Check connection with the board if using eth communication
     if "eth-" in comm_type:
+        if not ip_addr:
+            exit_message("ERROR: Must specify an IP address for ethernet base communication devices.")
+
         print("")
         print("Trying to ping the FPGA...")
         try:
@@ -660,6 +662,6 @@ if __name__ == "__main__":
 
     # Close the PCIe link before exit
     if "pcie-" in comm_type:
-        setupPcieCard(open=False, link=pcie_rssi_link, ip_addr="")
+        setupPcieCard(open=False, link=pcie_rssi_link)
 
     print("")
