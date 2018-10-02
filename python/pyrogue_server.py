@@ -47,8 +47,8 @@ def usage(name):
     print("    -n|--nopoll                : Disable all polling")
     print("    -c|--commType comm_type    : Communication type with the FPGA",\
         "(default to \"eth-rssi-non-interleaved\"")
-    print("    -l|--slot slot_number      : ATCA slot number (only needed with"\
-        "PCIe). Supported options are 2 to 7")
+    print("    -l|--udp-client index      : PCIe UDP Client (only needed with"\
+        "PCIe). Supported options are 0 to 5")
     print("    -b|--stream-size data_size : Expose the stream data as EPICS",\
         "PVs. Only the first \"data_size\" points will be exposed.",\
         "(Must be used with -e)")
@@ -458,12 +458,12 @@ class LocalServer(pyrogue.Root):
             self.epics.stop()
         super(LocalServer, self).stop()
 
-def setupPcieCard(open, link):
+def setupPcieCard(open, index, ip_addr):
 
     if open:
-        print("Opening PCIe RRSI link {}".format(link))
+        print("Opening PCIe Udp client {}".format(index))
     else:
-        print("Closing PCIe RRSI link {}".format(link))
+        print("Closing PCIe Udp client {}".format(index))
 
     # Import PCIe related modules
     import rogue.hardware.axi
@@ -479,32 +479,33 @@ def setupPcieCard(open, link):
     mask = pcie.Core.EthLane[0].EthConfig.BypRssi.get()
 
     if open:
-        mask ^= (1<<link)
+        mask ^= (1<<index)
     else:
-        mask |= (1<<link)
+        mask |= (1<<index)
 
     pcie.Core.EthLane[0].EthConfig.BypRssi.set(mask)
 
     # Setup udp client port number
     if open:
-        pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8198)
+        pcie.Core.EthLane[0].UdpClient[index].ClientRemoteIp.set(ip_addr)
+        pcie.Core.EthLane[0].UdpClient[index].ClientRemotePort.set(8198)
     else:
-        pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8192)
+        pcie.Core.EthLane[0].UdpClient[index].ClientRemotePort.set(8192)
     # Setting the Open and close connection registers
-    pcie.Core.EthLane[0].RssiClient[link].CloseConn.set(int(not open))
-    pcie.Core.EthLane[0].RssiClient[link].OpenConn.set(int(open))
-    pcie.Core.EthLane[0].RssiClient[link].HeaderChksumEn.set(1)
+    pcie.Core.EthLane[0].RssiClient[index].CloseConn.set(int(not open))
+    pcie.Core.EthLane[0].RssiClient[index].OpenConn.set(int(open))
+    pcie.Core.EthLane[0].RssiClient[index].HeaderChksumEn.set(1)
 
     # Printt register status after setting them
     print("PCIe register status:")
     print("EthConfig.BypRssi = 0x{:02X}".format(
         pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
-    print("UdpClient[{}].ClientRemotePort = {}".format(link,
-        pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.get()))
-    print("RssiClient[{}].CloseConn = {}".format(link,
-        pcie.Core.EthLane[0].RssiClient[link].CloseConn.get()))
-    print("RssiClient[{}].OpenConn = {}".format(link,
-        pcie.Core.EthLane[0].RssiClient[link].OpenConn.get()))
+    print("UdpClient[{}].ClientRemotePort = {}".format(index,
+        pcie.Core.EthLane[0].UdpClient[index].ClientRemotePort.get()))
+    print("RssiClient[{}].CloseConn = {}".format(index,
+        pcie.Core.EthLane[0].RssiClient[index].CloseConn.get()))
+    print("RssiClient[{}].OpenConn = {}".format(index,
+        pcie.Core.EthLane[0].RssiClient[index].OpenConn.get()))
     print("")
 
     # Close device
@@ -523,8 +524,7 @@ if __name__ == "__main__":
     stream_pv_valid_types = ["UInt16", "Int16", "UInt32", "Int32"]
     comm_type = "eth-rssi-non-interleaved";
     comm_type_valid_types = ["eth-rssi-non-interleaved", "eth-rssi-interleaved", "pcie-rssi-interleaved"]
-    slot_number=0
-    pcie_rssi_link=0
+    udp_client_index=0
     pv_dump_file= ""
 
     # Read Arguments
@@ -532,7 +532,7 @@ if __name__ == "__main__":
         opts, _ = getopt.getopt(sys.argv[1:],
             "ha:sp:e:d:nb:f:c:l:u:",
             ["help", "addr=", "server", "pyro=", "epics=", "defaults=", "nopoll",
-            "stream-size=", "stream-type=", "commType=", "slot=", "dump-pvs="])
+            "stream-size=", "stream-type=", "commType=", "udp-client=", "dump-pvs="])
     except getopt.GetoptError:
         usage(sys.argv[0])
         sys.exit()
@@ -571,18 +571,22 @@ if __name__ == "__main__":
                 for c in comm_type_valid_types:
                     print("  - \"{}\"".format(c))
                 exit_message("ERROR: Invalid communication type")
-        elif opt in ("-l", "--slot"):       # Slot number
-            slot_number = int(arg)
+        elif opt in ("-l", "--udp-client"):       # Udp client index
+            udp_client_index = int(arg)
         elif opt in ("-u", "--dump-pvs"):   # Dump PV file
             pv_dump_file = arg
 
-    # Check connection with the board if using eth communication
-    if "eth-" in comm_type:
+    # Verify if IP address is valid
+    if not ip_addr:
+        exit_message("ERROR: Must specify IP Address.")
+    else:
         try:
             socket.inet_aton(ip_addr)
         except socket.error:
             exit_message("ERROR: Invalid IP Address.")
 
+    # Check connection with the board if using eth communication
+    if "eth-" in comm_type:
         print("")
         print("Trying to ping the FPGA...")
         try:
@@ -593,9 +597,8 @@ if __name__ == "__main__":
         except subprocess.CalledProcessError:
            exit_message("    ERROR: FPGA can't be reached!")
     elif "pcie-" in comm_type:
-        if slot_number in range(2, 8):
-            pcie_rssi_link = slot_number - 2
-            setupPcieCard(open=True, link=pcie_rssi_link)
+        if udp_client_index in range(0, 6):
+            setupPcieCard(open=True, index=udp_client_index, ip_addr=ip_addr)
         else:
             exit_message("ERROR: Invalid slot number. Must be between 2 and 7")
 
