@@ -459,64 +459,190 @@ class LocalServer(pyrogue.Root):
             self.epics.stop()
         super(LocalServer, self).stop()
 
-def setupPcieCard(open, link, ip_addr=""):
+class PcieCard():
+    """
+    Class to setup the PCIe RSSI card.
 
-    # Import PCIe related modules
-    import rogue.hardware.axi
-    import SmurfKcu1500RssiOffload as smurf
+    This class takes care of setting up PCIe card according to the communication
+    type used.
 
-    # Build the device
-    pcie = pyrogue.Root(name='pcie',description='')
-    memMap = rogue.hardware.axi.AxiMemMap('/dev/datadev_0')
-    pcie.add(smurf.Core(memBase=memMap))
-    pcie.start(pollEn='False',initRead='True')
+    If the PCIe card is present in the system:
+    - If PCIe comunication type is used, the RSSI connection is open in the
+    specific link. Also, when the the server is closed, the RSSI connection
+    is closed.
+    - If ETH commuication type is used, the RSSI connection is closed in the
+    specific link.
 
-    # Read the bypass RSSI mask
-    mask = pcie.Core.EthLane[0].EthConfig.BypRssi.get()
+    If the PCIe card is not present:
+    - If PCIe comunication type is used, the program is terminated.
+    - If ETH communication type is used, then this class does not do anything.
 
-    if open:
-        print("Opening PCIe RSSI link {}".format(link))
+    This class must be used in a 'with' block in order to ensure that the
+    RSSI connection is close correctly during exit even in the case of an
+    exepction condition.
+    """
 
-        # Clear the RSSI bypass bit
-        mask &= ~(1<<link)
+    def __init__(self, comm_type, link, dev='/dev/datadev_0', ip_addr=''):
 
-        # Setup udp client IP address and port number
-        if ip_addr:
-            pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.set(ip_addr)
-        pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8198)
-    else:
-        print("Closing PCIe RSSI link {}".format(link))
+        # Check if we use the PCIe for communication
+        if 'pcie-' in comm_type:
+            self.use_pcie = True
+        else:
+            self.use_pcie = False
 
-        # Set the RSSI bypass bit
-        mask |= (1<<link)
+        # Check if the PCIe card is present in the system
+        if Path(dev).exists():
 
-        # Setup udp client port number
-        pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8192)
+            # PCIe card is present
+            self.pcie_present = True
 
-    # Set the bypass RSSi mask
-    pcie.Core.EthLane[0].EthConfig.BypRssi.set(mask)
+            # Verify if RSSI link is valid
+            if link in range(0, 6):
+                self.link = link
+            else:
+                exit_message("ERROR: Invalid slot number. Must be between 2 and 7")
 
-    # Set the Open and close connection registers
-    pcie.Core.EthLane[0].RssiClient[link].CloseConn.set(int(not open))
-    pcie.Core.EthLane[0].RssiClient[link].OpenConn.set(int(open))
-    pcie.Core.EthLane[0].RssiClient[link].HeaderChksumEn.set(1)
+            # Optional, the FPGA IP Address
+            self.ip_addr = ip_addr
 
-    # Printt register status after setting them
-    print("PCIe register status:")
-    print("EthConfig.BypRssi = 0x{:02X}".format(
-        pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
-    print("UdpClient[{}].ClientRemoteIp = {}".format(link,
-        pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.get()))
-    print("UdpClient[{}].ClientRemotePort = {}".format(link,
-        pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.get()))
-    print("RssiClient[{}].CloseConn = {}".format(link,
-        pcie.Core.EthLane[0].RssiClient[link].CloseConn.get()))
-    print("RssiClient[{}].OpenConn = {}".format(link,
-        pcie.Core.EthLane[0].RssiClient[link].OpenConn.get()))
-    print("")
+            # Import PCIe related modules
+            import rogue.hardware.axi
+            import SmurfKcu1500RssiOffload as fpga
 
-    # Close device
-    pcie.stop()
+            # Build the pyrogue device for the PCIe board
+            self.pcie = pyrogue.Root(name='pcie',description='')
+            memMap = rogue.hardware.axi.AxiMemMap(dev)
+            pcie.add(fpga.Core(memBase=memMap))
+
+            # Print the FW version information
+            self.print_version()
+
+        else:
+            # Check if we are trying to use PCIe communication without the Pcie
+            # card present in the system
+            if self.use_pcie:
+                exit_message("ERROR: PCIe device {} does not exist.".format(dev))
+
+            self.pcie_present = False
+
+    def __enter__(self):
+
+        if self.pcie_present:
+            if self.use_pcie:
+                # If the PCIe is present and we are using it for
+                # communication, open the RSSI connection
+                self.open_rssi()
+            else:
+                # If the PCIe is present but we are not using it
+                # for communication, close the RSSI connection
+                self.close_rssi()
+
+            # If the PCIe is not present, then we don't do anything
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+
+        if self.pcie_present and self.use_pcie:
+            # If the PCIe is present and we used it for communication
+            # close the RSSI before exit
+            self.close_rssi()
+
+    def open_rssi(self):
+        """
+        Open the RSSI connection
+        """
+        self.__configure(open=True)
+
+    def close_rssi(self):
+        """
+        Close the RSSI connection
+        """
+        self.__configure(open=False)
+
+    def print_version(self):
+        """
+        Print the FW version information
+        """
+
+        # Start the device
+        pcie.start(pollEn='False',initRead='True')
+
+        # Print the FW verion information
+        print("PCIe version information:")
+        print("FW Version      : 0x{:08X}".format(
+            pcie.Core.AxiPcieCore.AxiVersion.FpgaVersion.get()))
+        print("FW GitHash      : 0x{:040X}".format(
+            pcie.Core.AxiPcieCore.AxiVersion.GitHash.get()))
+        print("FW image name   : {}".format(
+            pcie.Core.AxiPcieCore.AxiVersion.ImageName.get()))
+        print("FW build env    : {}".format(
+            pcie.Core.AxiPcieCore.AxiVersion.BuildEnv.get()))
+        print("FW build server : {}".format(
+            pcie.Core.AxiPcieCore.AxiVersion.BuildServer.get()))
+        print("FW build date   : {}".format(
+            pcie.Core.AxiPcieCore.AxiVersion.BuildDate.get()))
+        print("FW builder      : {}".format(
+            pcie.Core.AxiPcieCore.AxiVersion.Builder.get()))
+        print("Up time         : {}".format(
+            pcie.Core.AxiPcieCore.AxiVersion.UpTime.get()))
+        print("Xilinx DNA ID   : 0x{:032X}".format(
+            pcie.Core.AxiPcieCore.AxiVersion.DeviceDna.get()))
+        print("")
+
+        # Stop the device
+        pcie.stop()
+
+    def __configure(self, open):
+
+        # Start the device
+        pcie.start(pollEn='False',initRead='True')
+
+        # Read the bypass RSSI mask
+        mask = pcie.Core.EthLane[0].EthConfig.BypRssi.get()
+
+        if open:
+            print("Opening PCIe RSSI link {}".format(self.link))
+
+            # Clear the RSSI bypass bit
+            mask &= ~(1<<self.link)
+
+            # Setup udp client IP address and port number
+            if self.ip_addr:
+                pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.set(self.ip_addr)
+            pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.set(8198)
+        else:
+            print("Closing PCIe RSSI link {}".format(self.link))
+
+            # Set the RSSI bypass bit
+            mask |= (1<<self.link)
+
+            # Setup udp client port number
+            pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.set(8192)
+
+        # Set the bypass RSSI mask
+        pcie.Core.EthLane[0].EthConfig.BypRssi.set(mask)
+
+        # Set the Open and close connection registers
+        pcie.Core.EthLane[0].RssiClient[self.link].CloseConn.set(int(not open))
+        pcie.Core.EthLane[0].RssiClient[self.link].OpenConn.set(int(open))
+        pcie.Core.EthLane[0].RssiClient[self.link].HeaderChksumEn.set(1)
+
+        # Printt register status after setting them
+        print("PCIe register status:")
+        print("EthConfig.BypRssi = 0x{:02X}".format(
+            pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
+        print("UdpClient[{}].ClientRemoteIp = {}".format(self.link,
+            pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.get()))
+        print("UdpClient[{}].ClientRemotePort = {}".format(self.link,
+            pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.get()))
+        print("RssiClient[{}].CloseConn = {}".format(self.link,
+            pcie.Core.EthLane[0].RssiClient[self.link].CloseConn.get()))
+        print("RssiClient[{}].OpenConn = {}".format(self.link,
+            pcie.Core.EthLane[0].RssiClient[self.link].OpenConn.get()))
+        print("")
+
+        # Close the device
+        pcie.stop()
 
 # Main body
 if __name__ == "__main__":
@@ -606,22 +732,6 @@ if __name__ == "__main__":
         except subprocess.CalledProcessError:
            exit_message("    ERROR: FPGA can't be reached!")
 
-        # If the PCIe device exist, and we are using ETH communication, disable it.
-        if pcie_dev.exists():
-            setupPcieCard(open=False, link=pcie_rssi_link)
-
-    elif "pcie-" in comm_type:
-
-        # Verify is PCIe device exists
-        if not pcie_dev.exists():
-            exit_message("ERROR: PCIe device {} does not exist.".format(pcie_dev))
-
-        # Verify if RSSI link is valid
-        if pcie_rssi_link in range(0, 6):
-            setupPcieCard(open=True, link=pcie_rssi_link, ip_addr=ip_addr)
-        else:
-            exit_message("ERROR: Invalid slot number. Must be between 2 and 7")
-
     if server_mode and not (group_name or epics_prefix):
         exit_message("    ERROR: Can not start in server mode without Pyro or EPICS server")
 
@@ -656,25 +766,24 @@ if __name__ == "__main__":
     if not server_mode:
         import pyrogue.gui
 
-    # Start pyRogue server
-    server = LocalServer(
-        ip_addr=ip_addr,
-        config_file=config_file,
-        server_mode=server_mode,
-        group_name=group_name,
-        epics_prefix=epics_prefix,
-        polling_en=polling_en,
-        comm_type=comm_type,
-        pcie_rssi_link=pcie_rssi_link,
-        stream_pv_size=stream_pv_size,
-        stream_pv_type=stream_pv_type,
-        pv_dump_file=pv_dump_file)
+    # The PCIeCard object will take care of setting up the PCIe card (if present)
+    with PcieCard(link=pcie_rssi_link, comm_type=comm_type, ip_addr=ip_addr):
+
+        # Start pyRogue server
+        server = LocalServer(
+            ip_addr=ip_addr,
+            config_file=config_file,
+            server_mode=server_mode,
+            group_name=group_name,
+            epics_prefix=epics_prefix,
+            polling_en=polling_en,
+            comm_type=comm_type,
+            pcie_rssi_link=pcie_rssi_link,
+            stream_pv_size=stream_pv_size,
+            stream_pv_type=stream_pv_type,
+            pv_dump_file=pv_dump_file)
 
     # Stop server
     server.stop()
-
-    # Close the PCIe link before exit
-    if "pcie-" in comm_type:
-        setupPcieCard(open=False, link=pcie_rssi_link)
 
     print("")
