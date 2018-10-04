@@ -210,9 +210,10 @@ class DataBuffer(rogue.interfaces.stream.Slave):
         """
         return list(self._data_byte_order_dict).index(self._data_byte_order)
 
-# Local server class
 class LocalServer(pyrogue.Root):
-
+    """
+    Local Server class. This class configure the whole rogue application.
+    """
     def __init__(self, ip_addr, config_file, server_mode, group_name, epics_prefix,\
         polling_en, comm_type, pcie_rssi_link, stream_pv_size, stream_pv_type,\
         pv_dump_file):
