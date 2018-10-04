@@ -518,7 +518,7 @@ class PcieCard():
             # Build the pyrogue device for the PCIe board
             self.pcie = pyrogue.Root(name='pcie',description='')
             memMap = rogue.hardware.axi.AxiMemMap(dev)
-            pcie.add(fpga.Core(memBase=memMap))
+            self.pcie.add(fpga.Core(memBase=memMap))
 
             # Print the FW version information
             self.print_version()
@@ -571,40 +571,40 @@ class PcieCard():
         """
 
         # Start the device
-        pcie.start(pollEn='False',initRead='True')
+        self.pcie.start(pollEn='False',initRead='True')
 
         # Print the FW verion information
         print("PCIe version information:")
         print("FW Version      : 0x{:08X}".format(
-            pcie.Core.AxiPcieCore.AxiVersion.FpgaVersion.get()))
+            self.pcie.Core.AxiPcieCore.AxiVersion.FpgaVersion.get()))
         print("FW GitHash      : 0x{:040X}".format(
-            pcie.Core.AxiPcieCore.AxiVersion.GitHash.get()))
+            self.pcie.Core.AxiPcieCore.AxiVersion.GitHash.get()))
         print("FW image name   : {}".format(
-            pcie.Core.AxiPcieCore.AxiVersion.ImageName.get()))
+            self.pcie.Core.AxiPcieCore.AxiVersion.ImageName.get()))
         print("FW build env    : {}".format(
-            pcie.Core.AxiPcieCore.AxiVersion.BuildEnv.get()))
+            self.pcie.Core.AxiPcieCore.AxiVersion.BuildEnv.get()))
         print("FW build server : {}".format(
-            pcie.Core.AxiPcieCore.AxiVersion.BuildServer.get()))
+            self.pcie.Core.AxiPcieCore.AxiVersion.BuildServer.get()))
         print("FW build date   : {}".format(
-            pcie.Core.AxiPcieCore.AxiVersion.BuildDate.get()))
+            self.pcie.Core.AxiPcieCore.AxiVersion.BuildDate.get()))
         print("FW builder      : {}".format(
-            pcie.Core.AxiPcieCore.AxiVersion.Builder.get()))
+            self.pcie.Core.AxiPcieCore.AxiVersion.Builder.get()))
         print("Up time         : {}".format(
-            pcie.Core.AxiPcieCore.AxiVersion.UpTime.get()))
+            self.pcie.Core.AxiPcieCore.AxiVersion.UpTime.get()))
         print("Xilinx DNA ID   : 0x{:032X}".format(
-            pcie.Core.AxiPcieCore.AxiVersion.DeviceDna.get()))
+            self.pcie.Core.AxiPcieCore.AxiVersion.DeviceDna.get()))
         print("")
 
         # Stop the device
-        pcie.stop()
+        self.pcie.stop()
 
     def __configure(self, open):
 
         # Start the device
-        pcie.start(pollEn='False',initRead='True')
+        self.pcie.start(pollEn='False',initRead='True')
 
         # Read the bypass RSSI mask
-        mask = pcie.Core.EthLane[0].EthConfig.BypRssi.get()
+        mask = self.pcie.Core.EthLane[0].EthConfig.BypRssi.get()
 
         if open:
             print("Opening PCIe RSSI link {}".format(self.link))
@@ -614,8 +614,8 @@ class PcieCard():
 
             # Setup udp client IP address and port number
             if self.ip_addr:
-                pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.set(self.ip_addr)
-            pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.set(8198)
+                self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.set(self.ip_addr)
+            self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.set(8198)
         else:
             print("Closing PCIe RSSI link {}".format(self.link))
 
@@ -623,32 +623,32 @@ class PcieCard():
             mask |= (1<<self.link)
 
             # Setup udp client port number
-            pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.set(8192)
+            self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.set(8192)
 
         # Set the bypass RSSI mask
-        pcie.Core.EthLane[0].EthConfig.BypRssi.set(mask)
+        self.pcie.Core.EthLane[0].EthConfig.BypRssi.set(mask)
 
         # Set the Open and close connection registers
-        pcie.Core.EthLane[0].RssiClient[self.link].CloseConn.set(int(not open))
-        pcie.Core.EthLane[0].RssiClient[self.link].OpenConn.set(int(open))
-        pcie.Core.EthLane[0].RssiClient[self.link].HeaderChksumEn.set(1)
+        self.pcie.Core.EthLane[0].RssiClient[self.link].CloseConn.set(int(not open))
+        self.pcie.Core.EthLane[0].RssiClient[self.link].OpenConn.set(int(open))
+        self.pcie.Core.EthLane[0].RssiClient[self.link].HeaderChksumEn.set(1)
 
         # Printt register status after setting them
         print("PCIe register status:")
         print("EthConfig.BypRssi = 0x{:02X}".format(
-            pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
+            self.pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
         print("UdpClient[{}].ClientRemoteIp = {}".format(self.link,
-            pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.get()))
+            self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.get()))
         print("UdpClient[{}].ClientRemotePort = {}".format(self.link,
-            pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.get()))
+            self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.get()))
         print("RssiClient[{}].CloseConn = {}".format(self.link,
-            pcie.Core.EthLane[0].RssiClient[self.link].CloseConn.get()))
+            self.pcie.Core.EthLane[0].RssiClient[self.link].CloseConn.get()))
         print("RssiClient[{}].OpenConn = {}".format(self.link,
-            pcie.Core.EthLane[0].RssiClient[self.link].OpenConn.get()))
+            self.pcie.Core.EthLane[0].RssiClient[self.link].OpenConn.get()))
         print("")
 
         # Close the device
-        pcie.stop()
+        self.pcie.stop()
 
 # Main body
 if __name__ == "__main__":
