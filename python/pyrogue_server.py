@@ -474,11 +474,11 @@ class PcieCard():
     type used.
 
     If the PCIe card is present in the system:
+    - All the RSSI connection links which point to the target IP address will
+      be closed.
     - If PCIe comunication type is used, the RSSI connection is open in the
-    specific link. Also, when the the server is closed, the RSSI connection
-    is closed.
-    - If ETH commuication type is used, the RSSI connection is closed in the
-    specific link.
+      specific link. Also, when the the server is closed, the RSSI connection
+      is closed.
 
     If the PCIe card is not present:
     - If PCIe comunication type is used, the program is terminated.
@@ -535,14 +535,15 @@ class PcieCard():
     def __enter__(self):
 
         if self.pcie_present:
+            # If the PCIe is present, close all RSSI links which point to the
+            # target IP address
+            self.close_all_rssi()
+
             if self.use_pcie:
                 # If the PCIe is present and we are using it for
-                # communication, open the RSSI connection
+                # communication, open the RSSI connection using the specified
+                # link
                 self.open_rssi()
-            else:
-                # If the PCIe is present but we are not using it
-                # for communication, close the RSSI connection
-                self.close_rssi()
 
             # If the PCIe is not present, then we don't do anything
         return self
@@ -556,15 +557,46 @@ class PcieCard():
 
     def open_rssi(self):
         """
-        Open the RSSI connection
+        Open the RSSI connection in the specified link
         """
-        self.__configure(open=True)
+
+        # Start the device
+        self.pcie.start(pollEn='False',initRead='True')
+
+        self.__configure(open=True, link=self.link)
+
+        # Stop the device
+        self.pcie.stop()
 
     def close_rssi(self):
         """
-        Close the RSSI connection
+        Close the RSSI connection in the specified link
         """
-        self.__configure(open=False)
+
+        # Start the device
+        self.pcie.start(pollEn='False',initRead='True')
+
+        self.__configure(open=False, link=self.link)
+
+        # Stop the device
+        self.pcie.stop()
+
+    def close_all_rssi(self):
+        """
+        Close all links with the target IP address
+        """
+
+        # Start the device
+        self.pcie.start(pollEn='False',initRead='True')
+
+        # Look for links with the target IP address, and close their RSSI connection
+        for i in range(6):
+            if self.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
+                print("  RSSI Link {} has targe IP address. Disabling it...")
+                self.__configure(open=False, link=i)
+
+        # Stop the device
+        self.pcie.stop()
 
     def print_version(self):
         """
@@ -599,57 +631,51 @@ class PcieCard():
         # Stop the device
         self.pcie.stop()
 
-    def __configure(self, open):
-
-        # Start the device
-        self.pcie.start(pollEn='False',initRead='True')
+    def __configure(self, open, link):
 
         # Read the bypass RSSI mask
         mask = self.pcie.Core.EthLane[0].EthConfig.BypRssi.get()
 
         if open:
-            print("Opening PCIe RSSI link {}".format(self.link))
+            print("Opening PCIe RSSI link {}".format(link))
 
             # Clear the RSSI bypass bit
-            mask &= ~(1<<self.link)
+            mask &= ~(1<<link)
 
             # Setup udp client IP address and port number
             if self.ip_addr:
-                self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.set(self.ip_addr)
-            self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.set(8198)
+                self.pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.set(self.ip_addr)
+            self.pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8198)
         else:
-            print("Closing PCIe RSSI link {}".format(self.link))
+            print("Closing PCIe RSSI link {}".format(link))
 
             # Set the RSSI bypass bit
-            mask |= (1<<self.link)
+            mask |= (1<<link)
 
             # Setup udp client port number
-            self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.set(8192)
+            self.pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8192)
 
         # Set the bypass RSSI mask
         self.pcie.Core.EthLane[0].EthConfig.BypRssi.set(mask)
 
         # Set the Open and close connection registers
-        self.pcie.Core.EthLane[0].RssiClient[self.link].CloseConn.set(int(not open))
-        self.pcie.Core.EthLane[0].RssiClient[self.link].OpenConn.set(int(open))
-        self.pcie.Core.EthLane[0].RssiClient[self.link].HeaderChksumEn.set(1)
+        self.pcie.Core.EthLane[0].RssiClient[link].CloseConn.set(int(not open))
+        self.pcie.Core.EthLane[0].RssiClient[link].OpenConn.set(int(open))
+        self.pcie.Core.EthLane[0].RssiClient[link].HeaderChksumEn.set(1)
 
         # Printt register status after setting them
         print("PCIe register status:")
         print("EthConfig.BypRssi = 0x{:02X}".format(
             self.pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
-        print("UdpClient[{}].ClientRemoteIp = {}".format(self.link,
-            self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.get()))
-        print("UdpClient[{}].ClientRemotePort = {}".format(self.link,
-            self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemotePort.get()))
-        print("RssiClient[{}].CloseConn = {}".format(self.link,
-            self.pcie.Core.EthLane[0].RssiClient[self.link].CloseConn.get()))
-        print("RssiClient[{}].OpenConn = {}".format(self.link,
-            self.pcie.Core.EthLane[0].RssiClient[self.link].OpenConn.get()))
+        print("UdpClient[{}].ClientRemoteIp = {}".format(link,
+            self.pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.get()))
+        print("UdpClient[{}].ClientRemotePort = {}".format(link,
+            self.pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.get()))
+        print("RssiClient[{}].CloseConn = {}".format(link,
+            self.pcie.Core.EthLane[0].RssiClient[link].CloseConn.get()))
+        print("RssiClient[{}].OpenConn = {}".format(link,
+            self.pcie.Core.EthLane[0].RssiClient[link].OpenConn.get()))
         print("")
-
-        # Close the device
-        self.pcie.stop()
 
 # Main body
 if __name__ == "__main__":
