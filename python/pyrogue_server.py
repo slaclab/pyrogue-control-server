@@ -589,11 +589,11 @@ class PcieCard():
         # Start the device
         self.pcie.start(pollEn='False',initRead='True')
 
-        prinf("Looking for RSSI links pointing to {}:")
+        print("Looking for RSSI links pointing to {}:".format(self.ip_addr))
         # Look for links with the target IP address, and close their RSSI connection
         for i in range(6):
             if self.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
-                print("  RSSI Link {} has targe IP address. Disabling it...".format(i))
+                print("  RSSI Link {} points to it. Disabling it...".format(i))
                 self.__configure(open=False, link=i)
 
         # Stop the device
@@ -665,16 +665,16 @@ class PcieCard():
         self.pcie.Core.EthLane[0].RssiClient[link].HeaderChksumEn.set(1)
 
         # Printt register status after setting them
-        print("  PCIe register status:")
-        print("  EthConfig.BypRssi = 0x{:02X}".format(
+        print("    PCIe register status:")
+        print("    EthConfig.BypRssi = 0x{:02X}".format(
             self.pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
-        print("  UdpClient[{}].ClientRemoteIp = {}".format(link,
+        print("    UdpClient[{}].ClientRemoteIp = {}".format(link,
             self.pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.get()))
-        print("  UdpClient[{}].ClientRemotePort = {}".format(link,
+        print("    UdpClient[{}].ClientRemotePort = {}".format(link,
             self.pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.get()))
-        print("  RssiClient[{}].CloseConn = {}".format(link,
+        print("    RssiClient[{}].CloseConn = {}".format(link,
             self.pcie.Core.EthLane[0].RssiClient[link].CloseConn.get()))
-        print("  RssiClient[{}].OpenConn = {}".format(link,
+        print("    RssiClient[{}].OpenConn = {}".format(link,
             self.pcie.Core.EthLane[0].RssiClient[link].OpenConn.get()))
         print("")
 
