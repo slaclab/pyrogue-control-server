@@ -493,6 +493,8 @@ class PcieCard():
 
         print("Setting up the RSSI PCIe card...")
 
+        # Get system status:
+
         # Check if we use the PCIe for communication
         if 'pcie-' in comm_type:
             self.use_pcie = True
@@ -503,46 +505,59 @@ class PcieCard():
 
         # Check if the PCIe card is present in the system
         if Path(dev).exists():
-
-            print("  PCIe is present in the system")
-
-            # PCIe card is present
             self.pcie_present = True
+            print("  PCIe is present in the system")
+        else:
+            self.pcie_present = False
+            print("  PCIe is not present in the system")
 
-            # Verify that the RSSI link number was specified when the board
-            # is in used
-            if self.use_pcie and not link:
-                exit_message("ERROR: Must specify an RSSI link number")
+        # Look for configuration errors:
 
-            # Verify if RSSI link is valid
+        # Check if we are trying to use PCIe communication without the Pcie
+        # card present in the system
+        if self.use_pcie ant not self.pcie_present:
+            exit_message("  ERROR: PCIe device {} does not exist.".format(dev))
+
+        # When the PCIe is in used verify the link number is valid
+        if self.use_pcie:
+            if not link:
+                exit_message("  ERROR: Must specify an RSSI link number")
+
             if link in range(0, 6):
                 self.link = link
             else:
-                exit_message("ERROR: Invalid RSSI link number. Must be between 2 and 7")
+                exit_message("  ERROR: Invalid RSSI link number. Must be between 2 and 7")
 
-            # Import PCIe related modules
-            import rogue.hardware.axi
-            import SmurfKcu1500RssiOffload as fpga
+        # Should need to check that the IP address is defined when PCIe is present
+        # and not in used, but that is enforce in the main function. We need to
+        # know the IP address so we can look for all RSSI links that point to it
+        # and close their connections.
+
+        # Not more configuration errors at this point
+
+        # Prepare the PCIe when present
+        if self.pcie_present:
 
             # Build the pyrogue device for the PCIe board
+            import rogue.hardware.axi
+            import SmurfKcu1500RssiOffload as fpga
             self.pcie = pyrogue.Root(name='pcie',description='')
             memMap = rogue.hardware.axi.AxiMemMap(dev)
             self.pcie.add(fpga.Core(memBase=memMap))
+            self.pcie.start(pollEn='False',initRead='True')
 
             # Print the FW version information
             self.print_version()
 
-            # If the IP address is not specified, read the one from the register space
+            # Get the IP address
             if ip_addr:
+                # The IP address was defined by the user.
+                # Note: when the PCIe card is not in used, the IP will be defined.
                 self.ip_addr = ip_addr
             else:
-                # Start the device
-                self.pcie.start(pollEn='False',initRead='True')
-
+                # If not defined, read the one from the register.
+                # Note: this could be the case only the PCIe is in used.
                 ip_addr = self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.get()
-
-                # Stop the deive
-                self.pcie.stop()
 
                 # Check if the IP address read from the PCIe card is valid
                 try:
@@ -553,116 +568,80 @@ class PcieCard():
                 self.ip_addr = ip_addr
                 print("  Using IP address loaded in the PCIe card: {}".format(self.ip_addr))
 
-        else:
-            print("  PCIe is not present in the system")
-
-            # Check if we are trying to use PCIe communication without the Pcie
-            # card present in the system
-            if self.use_pcie:
-                exit_message("ERROR: PCIe device {} does not exist.".format(dev))
-
-            # PCIe card is not present
-            self.pcie_present = False
+        # When the PCIe card is not present we don't do anything
 
     def __enter__(self):
+        # Close all RSSI links that point to the target IP address
+        self.close_all_rssi()
 
-        if self.pcie_present:
-            # If the PCIe is present, close all RSSI links which point to the
-            # target IP address
-            self.close_all_rssi()
+        # Open the RSSI link
+        self.open_rssi()
 
-            if self.use_pcie:
-                # If the PCIe is present and we are using it for
-                # communication, open the RSSI connection using the specified
-                # link
-                self.open_rssi()
-
-            # If the PCIe is not present, then we don't do anything
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-
-        if self.pcie_present and self.use_pcie:
-            # If the PCIe is present and we used it for communication
-            # close the RSSI before exit
-            self.close_rssi()
+        # Close the RSSI link before exit
+        self.close_rssi()
 
     def open_rssi(self):
         """
         Open the RSSI connection in the specified link
         """
 
-        # Start the device
-        self.pcie.start(pollEn='False',initRead='True')
-
-        self.__configure(open=True, link=self.link)
-
-        # Stop the device
-        self.pcie.stop()
+        # Check if the PCIe is present and in used
+        if self.pcie_present and self.use_pcie:
+            self.__configure(open=True, link=self.link)
 
     def close_rssi(self):
         """
         Close the RSSI connection in the specified link
         """
 
-        # Start the device
-        self.pcie.start(pollEn='False',initRead='True')
-
-        self.__configure(open=False, link=self.link)
-
-        # Stop the device
-        self.pcie.stop()
+        # Check if the PCIe is present and in used
+        if self.pcie_present and self.use_pcie:
+            self.__configure(open=False, link=self.link)
 
     def close_all_rssi(self):
         """
         Close all links with the target IP address
         """
 
-        # Start the device
-        self.pcie.start(pollEn='False',initRead='True')
-
-        print("  Looking for RSSI links pointing to {}:".format(self.ip_addr))
-        # Look for links with the target IP address, and close their RSSI connection
-        for i in range(6):
-            if self.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
-                print("    RSSI Link {} points to it. Disabling it...".format(i))
-                self.__configure(open=False, link=i)
-
-        # Stop the device
-        self.pcie.stop()
+        # Check if the PCIe is present
+        if self.pcie_present:
+            print("  Looking for RSSI links pointing to {}:".format(self.ip_addr))
+            # Look for links with the target IP address, and close their RSSI connection
+            for i in range(6):
+                if self.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
+                    print("    RSSI Link {} points to it. Disabling it...".format(i))
+                    self.__configure(open=False, link=i)
 
     def print_version(self):
         """
         Print the FW version information
         """
 
-        # Start the device
-        self.pcie.start(pollEn='False',initRead='True')
-
-        # Print the FW verion information
-        print("  PCIe information:")
-        print("  FW Version      : 0x{:08X}".format(
-            self.pcie.Core.AxiPcieCore.AxiVersion.FpgaVersion.get()))
-        print("  FW GitHash      : 0x{:040X}".format(
-            self.pcie.Core.AxiPcieCore.AxiVersion.GitHash.get()))
-        print("  FW image name   : {}".format(
-            self.pcie.Core.AxiPcieCore.AxiVersion.ImageName.get()))
-        print("  FW build env    : {}".format(
-            self.pcie.Core.AxiPcieCore.AxiVersion.BuildEnv.get()))
-        print("  FW build server : {}".format(
-            self.pcie.Core.AxiPcieCore.AxiVersion.BuildServer.get()))
-        print("  FW build date   : {}".format(
-            self.pcie.Core.AxiPcieCore.AxiVersion.BuildDate.get()))
-        print("  FW builder      : {}".format(
-            self.pcie.Core.AxiPcieCore.AxiVersion.Builder.get()))
-        print("  Up time         : {}".format(
-            self.pcie.Core.AxiPcieCore.AxiVersion.UpTime.get()))
-        print("  Xilinx DNA ID   : 0x{:032X}".format(
-            self.pcie.Core.AxiPcieCore.AxiVersion.DeviceDna.get()))
-        print("")
-
-        # Stop the device
-        self.pcie.stop()
+        # Print inforamtion if the PCIe is present
+        if self.pcie_present:
+            print("  PCIe information:")
+            print("  FW Version      : 0x{:08X}".format(
+                self.pcie.Core.AxiPcieCore.AxiVersion.FpgaVersion.get()))
+            print("  FW GitHash      : 0x{:040X}".format(
+                self.pcie.Core.AxiPcieCore.AxiVersion.GitHash.get()))
+            print("  FW image name   : {}".format(
+                self.pcie.Core.AxiPcieCore.AxiVersion.ImageName.get()))
+            print("  FW build env    : {}".format(
+                self.pcie.Core.AxiPcieCore.AxiVersion.BuildEnv.get()))
+            print("  FW build server : {}".format(
+                self.pcie.Core.AxiPcieCore.AxiVersion.BuildServer.get()))
+            print("  FW build date   : {}".format(
+                self.pcie.Core.AxiPcieCore.AxiVersion.BuildDate.get()))
+            print("  FW builder      : {}".format(
+                self.pcie.Core.AxiPcieCore.AxiVersion.Builder.get()))
+            print("  Up time         : {}".format(
+                self.pcie.Core.AxiPcieCore.AxiVersion.UpTime.get()))
+            print("  Xilinx DNA ID   : 0x{:032X}".format(
+                self.pcie.Core.AxiPcieCore.AxiVersion.DeviceDna.get()))
+            print("")
 
     def __configure(self, open, link):
 
