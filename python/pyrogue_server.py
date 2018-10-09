@@ -632,25 +632,26 @@ class PcieCard():
 
         # Print inforamtion if the PCIe is present
         if self.pcie_present:
-            print("  PCIe information")
             print("  ==============================================================")
-            print("  FW Version      : 0x{:08X}".format(
+            print("                         PCIe information")
+            print("  ==============================================================")
+            print("    FW Version      : 0x{:08X}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.FpgaVersion.get()))
-            print("  FW GitHash      : 0x{:040X}".format(
+            print("    FW GitHash      : 0x{:040X}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.GitHash.get()))
-            print("  FW image name   : {}".format(
+            print("    FW image name   : {}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.ImageName.get()))
-            print("  FW build env    : {}".format(
+            print("    FW build env    : {}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.BuildEnv.get()))
-            print("  FW build server : {}".format(
+            print("    FW build server : {}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.BuildServer.get()))
-            print("  FW build date   : {}".format(
+            print("    FW build date   : {}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.BuildDate.get()))
-            print("  FW builder      : {}".format(
+            print("    FW builder      : {}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.Builder.get()))
-            print("  Up time         : {}".format(
+            print("    Up time         : {}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.UpTime.get()))
-            print("  Xilinx DNA ID   : 0x{:032X}".format(
+            print("    Xilinx DNA ID   : 0x{:032X}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.DeviceDna.get()))
             print("  ==============================================================")
             print("")
