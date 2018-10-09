@@ -515,7 +515,7 @@ class PcieCard():
 
         # Check if we are trying to use PCIe communication without the Pcie
         # card present in the system
-        if self.use_pcie ant not self.pcie_present:
+        if self.use_pcie and not self.pcie_present:
             exit_message("  ERROR: PCIe device {} does not exist.".format(dev))
 
         # When the PCIe is in used verify the link number is valid
