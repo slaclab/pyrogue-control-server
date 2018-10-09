@@ -502,7 +502,7 @@ class PcieCard():
         else:
             self.pcie_present = False
             print("  PCIe is not present in the system")
-            
+
         # Check if we use the PCIe for communication
         if 'pcie-' in comm_type:
             self.use_pcie = True
@@ -525,6 +525,7 @@ class PcieCard():
 
             if link in range(0, 6):
                 self.link = link
+                print("  Using RSSI link number {}".format(self.link))
             else:
                 exit_message("  ERROR: Invalid RSSI link number. Must be between 0 and 5")
 
@@ -554,6 +555,7 @@ class PcieCard():
                 # The IP address was defined by the user.
                 # Note: when the PCIe card is not in used, the IP will be defined.
                 self.ip_addr = ip_addr
+                print("  Using IP specified address: {}".format(self.ip_addr))
             else:
                 # If not defined, read the one from the register.
                 # Note: this could be the case only the PCIe is in used.
@@ -649,7 +651,7 @@ class PcieCard():
         mask = self.pcie.Core.EthLane[0].EthConfig.BypRssi.get()
 
         if open:
-            print("  Opening PCIe RSSI link {}".format(link))
+            print("    Opening PCIe RSSI link {}".format(link))
 
             # Clear the RSSI bypass bit
             mask &= ~(1<<link)
@@ -658,7 +660,7 @@ class PcieCard():
             self.pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.set(self.ip_addr)
             self.pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8198)
         else:
-            print("  Closing PCIe RSSI link {}".format(link))
+            print("    Closing PCIe RSSI link {}".format(link))
 
             # Set the RSSI bypass bit
             mask |= (1<<link)
@@ -675,16 +677,16 @@ class PcieCard():
         self.pcie.Core.EthLane[0].RssiClient[link].HeaderChksumEn.set(1)
 
         # Printt register status after setting them
-        print("    PCIe register status:")
-        print("    EthConfig.BypRssi = 0x{:02X}".format(
+        print("      PCIe register status:")
+        print("      EthConfig.BypRssi = 0x{:02X}".format(
             self.pcie.Core.EthLane[0].EthConfig.BypRssi.get()))
-        print("    UdpClient[{}].ClientRemoteIp = {}".format(link,
+        print("      UdpClient[{}].ClientRemoteIp = {}".format(link,
             self.pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.get()))
-        print("    UdpClient[{}].ClientRemotePort = {}".format(link,
+        print("      UdpClient[{}].ClientRemotePort = {}".format(link,
             self.pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.get()))
-        print("    RssiClient[{}].CloseConn = {}".format(link,
+        print("      RssiClient[{}].CloseConn = {}".format(link,
             self.pcie.Core.EthLane[0].RssiClient[link].CloseConn.get()))
-        print("    RssiClient[{}].OpenConn = {}".format(link,
+        print("      RssiClient[{}].OpenConn = {}".format(link,
             self.pcie.Core.EthLane[0].RssiClient[link].OpenConn.get()))
         print("")
 
