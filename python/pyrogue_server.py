@@ -533,11 +533,19 @@ class PcieCard():
                 # Start the device
                 self.pcie.start(pollEn='False',initRead='True')
 
-                self.ip_addr = self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.get()
-                print("Using IP address loaded in the PCIe card: {}".format(self.ip_addr))
+                ip_addr = self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.get()
 
                 # Stop the deive
                 self.pcie.stop()
+
+                # Check if the IP address read from the PCIe card is valid
+                try:
+                    socket.inet_pton(socket.AF_INET, ip_addr)
+                except socket.error:
+                    exit_message("ERROR: IP Address read from the PCIe card: {} is invalid.".format(ip_addr))
+
+                self.ip_addr = ip_addr
+                print("Using IP address loaded in the PCIe card: {}".format(self.ip_addr))
 
         else:
             # Check if we are trying to use PCIe communication without the Pcie
