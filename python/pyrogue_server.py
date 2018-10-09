@@ -698,7 +698,6 @@ class PcieCard():
             self.pcie.Core.EthLane[0].RssiClient[link].CloseConn.get()))
         print("      RssiClient[{}].OpenConn = {}".format(link,
             self.pcie.Core.EthLane[0].RssiClient[link].OpenConn.get()))
-        print("")
 
 # Main body
 if __name__ == "__main__":
