@@ -520,7 +520,7 @@ class PcieCard():
 
         # When the PCIe is in used verify the link number is valid
         if self.use_pcie:
-            if not link:
+            if link == None:
                 exit_message("  ERROR: Must specify an RSSI link number")
 
             if link in range(0, 6):
