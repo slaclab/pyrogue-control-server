@@ -526,7 +526,7 @@ class PcieCard():
             if link in range(0, 6):
                 self.link = link
             else:
-                exit_message("  ERROR: Invalid RSSI link number. Must be between 2 and 7")
+                exit_message("  ERROR: Invalid RSSI link number. Must be between 0 and 5")
 
         # Should need to check that the IP address is defined when PCIe is present
         # and not in used, but that is enforce in the main function. We need to
