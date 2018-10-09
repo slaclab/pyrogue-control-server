@@ -489,7 +489,7 @@ class PcieCard():
     exepction condition.
     """
 
-    def __init__(self, comm_type, link, dev='/dev/datadev_0', ip_addr=''):
+    def __init__(self, comm_type, link, ip_addr='', dev='/dev/datadev_0'):
 
         # Check if we use the PCIe for communication
         if 'pcie-' in comm_type:
@@ -503,14 +503,16 @@ class PcieCard():
             # PCIe card is present
             self.pcie_present = True
 
+            # Verify that the RSSI link number was specified when the board
+            # is in used
+            if self.use_pcie and not link:
+                exit_message("ERROR: Must specify an RSSI link number")
+
             # Verify if RSSI link is valid
             if link in range(0, 6):
                 self.link = link
             else:
-                exit_message("ERROR: Invalid slot number. Must be between 2 and 7")
-
-            # Optional, the FPGA IP Address
-            self.ip_addr = ip_addr
+                exit_message("ERROR: Invalid RSSI link number. Must be between 2 and 7")
 
             # Import PCIe related modules
             import rogue.hardware.axi
@@ -524,12 +526,26 @@ class PcieCard():
             # Print the FW version information
             self.print_version()
 
+            # If the IP address is not specified, read the one from the register space
+            if ip_addr:
+                self.ip_addr = ip_addr
+            else:
+                # Start the device
+                self.pcie.start(pollEn='False',initRead='True')
+
+                self.ip_addr = self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.get()
+                print("Using IP address loaded in the PCIe card: {}".format(self.ip_addr))
+
+                # Stop the deive
+                self.pcie.stop()
+
         else:
             # Check if we are trying to use PCIe communication without the Pcie
             # card present in the system
             if self.use_pcie:
                 exit_message("ERROR: PCIe device {} does not exist.".format(dev))
 
+            # PCIe card is not present
             self.pcie_present = False
 
     def __enter__(self):
@@ -592,7 +608,7 @@ class PcieCard():
         print("Looking for RSSI links pointing to {}:".format(self.ip_addr))
         # Look for links with the target IP address, and close their RSSI connection
         for i in range(6):
-            if self.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
+            if slef.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
                 print("  RSSI Link {} points to it. Disabling it...".format(i))
                 self.__configure(open=False, link=i)
 
@@ -644,8 +660,7 @@ class PcieCard():
             mask &= ~(1<<link)
 
             # Setup udp client IP address and port number
-            if self.ip_addr:
-                self.pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.set(self.ip_addr)
+            self.pcie.Core.EthLane[0].UdpClient[link].ClientRemoteIp.set(self.ip_addr)
             self.pcie.Core.EthLane[0].UdpClient[link].ClientRemotePort.set(8198)
         else:
             print("  Closing PCIe RSSI link {}".format(link))
@@ -691,7 +706,7 @@ if __name__ == "__main__":
     stream_pv_valid_types = ["UInt16", "Int16", "UInt32", "Int32"]
     comm_type = "eth-rssi-non-interleaved";
     comm_type_valid_types = ["eth-rssi-non-interleaved", "eth-rssi-interleaved", "pcie-rssi-interleaved"]
-    pcie_rssi_link=0
+    pcie_rssi_link=None
     pv_dump_file= ""
     pcie_dev=Path("/dev/datadev_0")
 
