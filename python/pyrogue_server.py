@@ -624,7 +624,7 @@ class PcieCard():
         print("  Looking for RSSI links pointing to {}:".format(self.ip_addr))
         # Look for links with the target IP address, and close their RSSI connection
         for i in range(6):
-            if slef.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
+            if self.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
                 print("    RSSI Link {} points to it. Disabling it...".format(i))
                 self.__configure(open=False, link=i)
 
