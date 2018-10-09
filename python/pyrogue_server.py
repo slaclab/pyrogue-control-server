@@ -491,14 +491,20 @@ class PcieCard():
 
     def __init__(self, comm_type, link, ip_addr='', dev='/dev/datadev_0'):
 
+        print("Setting up the RSSI PCIe card...")
+
         # Check if we use the PCIe for communication
         if 'pcie-' in comm_type:
             self.use_pcie = True
+            print("  PCIe based communicartion selected")
         else:
             self.use_pcie = False
+            print("  PCIe based communication not selected")
 
         # Check if the PCIe card is present in the system
         if Path(dev).exists():
+
+            print("  PCIe is present in the system")
 
             # PCIe card is present
             self.pcie_present = True
@@ -545,9 +551,11 @@ class PcieCard():
                     exit_message("ERROR: IP Address read from the PCIe card: {} is invalid.".format(ip_addr))
 
                 self.ip_addr = ip_addr
-                print("Using IP address loaded in the PCIe card: {}".format(self.ip_addr))
+                print("  Using IP address loaded in the PCIe card: {}".format(self.ip_addr))
 
         else:
+            print("  PCIe is not present in the system")
+
             # Check if we are trying to use PCIe communication without the Pcie
             # card present in the system
             if self.use_pcie:
@@ -613,11 +621,11 @@ class PcieCard():
         # Start the device
         self.pcie.start(pollEn='False',initRead='True')
 
-        print("Looking for RSSI links pointing to {}:".format(self.ip_addr))
+        print("  Looking for RSSI links pointing to {}:".format(self.ip_addr))
         # Look for links with the target IP address, and close their RSSI connection
         for i in range(6):
             if slef.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
-                print("  RSSI Link {} points to it. Disabling it...".format(i))
+                print("    RSSI Link {} points to it. Disabling it...".format(i))
                 self.__configure(open=False, link=i)
 
         # Stop the device
@@ -632,24 +640,24 @@ class PcieCard():
         self.pcie.start(pollEn='False',initRead='True')
 
         # Print the FW verion information
-        print("PCIe version information:")
-        print("FW Version      : 0x{:08X}".format(
+        print("  PCIe information:")
+        print("  FW Version      : 0x{:08X}".format(
             self.pcie.Core.AxiPcieCore.AxiVersion.FpgaVersion.get()))
-        print("FW GitHash      : 0x{:040X}".format(
+        print("  FW GitHash      : 0x{:040X}".format(
             self.pcie.Core.AxiPcieCore.AxiVersion.GitHash.get()))
-        print("FW image name   : {}".format(
+        print("  FW image name   : {}".format(
             self.pcie.Core.AxiPcieCore.AxiVersion.ImageName.get()))
-        print("FW build env    : {}".format(
+        print("  FW build env    : {}".format(
             self.pcie.Core.AxiPcieCore.AxiVersion.BuildEnv.get()))
-        print("FW build server : {}".format(
+        print("  FW build server : {}".format(
             self.pcie.Core.AxiPcieCore.AxiVersion.BuildServer.get()))
-        print("FW build date   : {}".format(
+        print("  FW build date   : {}".format(
             self.pcie.Core.AxiPcieCore.AxiVersion.BuildDate.get()))
-        print("FW builder      : {}".format(
+        print("  FW builder      : {}".format(
             self.pcie.Core.AxiPcieCore.AxiVersion.Builder.get()))
-        print("Up time         : {}".format(
+        print("  Up time         : {}".format(
             self.pcie.Core.AxiPcieCore.AxiVersion.UpTime.get()))
-        print("Xilinx DNA ID   : 0x{:032X}".format(
+        print("  Xilinx DNA ID   : 0x{:032X}".format(
             self.pcie.Core.AxiPcieCore.AxiVersion.DeviceDna.get()))
         print("")
 
@@ -662,7 +670,7 @@ class PcieCard():
         mask = self.pcie.Core.EthLane[0].EthConfig.BypRssi.get()
 
         if open:
-            print("Opening PCIe RSSI link {}".format(link))
+            print("  Opening PCIe RSSI link {}".format(link))
 
             # Clear the RSSI bypass bit
             mask &= ~(1<<link)
