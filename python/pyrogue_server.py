@@ -592,6 +592,7 @@ class PcieCard():
 
         # Check if the PCIe is present and in used
         if self.pcie_present and self.use_pcie:
+            print("  Opening RSSI link...")
             self.__configure(open=True, link=self.link)
 
     def close_rssi(self):
@@ -601,6 +602,7 @@ class PcieCard():
 
         # Check if the PCIe is present and in used
         if self.pcie_present and self.use_pcie:
+            print("  Closing RSSI link...")
             self.__configure(open=False, link=self.link)
 
     def close_all_rssi(self):
