@@ -495,14 +495,6 @@ class PcieCard():
 
         # Get system status:
 
-        # Check if we use the PCIe for communication
-        if 'pcie-' in comm_type:
-            self.use_pcie = True
-            print("  PCIe based communicartion selected")
-        else:
-            self.use_pcie = False
-            print("  PCIe based communication not selected")
-
         # Check if the PCIe card is present in the system
         if Path(dev).exists():
             self.pcie_present = True
@@ -510,6 +502,14 @@ class PcieCard():
         else:
             self.pcie_present = False
             print("  PCIe is not present in the system")
+            
+        # Check if we use the PCIe for communication
+        if 'pcie-' in comm_type:
+            self.use_pcie = True
+            print("  PCIe based communicartion selected")
+        else:
+            self.use_pcie = False
+            print("  PCIe based communication not selected")
 
         # Look for configuration errors:
 
