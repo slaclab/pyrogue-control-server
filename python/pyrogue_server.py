@@ -594,6 +594,8 @@ class PcieCard():
         if self.pcie_present and self.use_pcie:
             print("  Opening RSSI link...")
             self.__configure(open=True, link=self.link)
+            print("  Done!")
+            print("")
 
     def close_rssi(self):
         """
@@ -604,6 +606,8 @@ class PcieCard():
         if self.pcie_present and self.use_pcie:
             print("  Closing RSSI link...")
             self.__configure(open=False, link=self.link)
+            print("  Done!")
+            print("")
 
     def close_all_rssi(self):
         """
@@ -612,12 +616,14 @@ class PcieCard():
 
         # Check if the PCIe is present
         if self.pcie_present:
-            print("  Looking for RSSI links pointing to {}:".format(self.ip_addr))
+            print("  Looking for RSSI links pointing to {}...".format(self.ip_addr))
             # Look for links with the target IP address, and close their RSSI connection
             for i in range(6):
                 if self.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
                     print("    RSSI Link {} points to it. Disabling it...".format(i))
                     self.__configure(open=False, link=i)
+            print("  Done!")
+            print("")
 
     def print_version(self):
         """
@@ -626,7 +632,8 @@ class PcieCard():
 
         # Print inforamtion if the PCIe is present
         if self.pcie_present:
-            print("  PCIe information:")
+            print("  PCIe information")
+            print("  ==============================================================")
             print("  FW Version      : 0x{:08X}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.FpgaVersion.get()))
             print("  FW GitHash      : 0x{:040X}".format(
@@ -645,6 +652,7 @@ class PcieCard():
                 self.pcie.Core.AxiPcieCore.AxiVersion.UpTime.get()))
             print("  Xilinx DNA ID   : 0x{:032X}".format(
                 self.pcie.Core.AxiPcieCore.AxiVersion.DeviceDna.get()))
+            print("  ==============================================================")
             print("")
 
     def __configure(self, open, link):
