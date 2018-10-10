@@ -500,22 +500,16 @@ class PcieCard():
         # Get system status:
 
         # Check if the PCIe card is present in the system
-        print("  - PCIe present in the system             : ", end='')
         if Path(dev).exists():
             self.pcie_present = True
-            print("Yes")
         else:
             self.pcie_present = False
-            print("No")
 
         # Check if we use the PCIe for communication
-        print("  - PCIe based communicartion selected     : ", end='')
         if 'pcie-' in comm_type:
             self.use_pcie = True
-            print("Yes")
         else:
             self.use_pcie = False
-            print("No")
 
         # Look for configuration errors:
 
@@ -531,7 +525,6 @@ class PcieCard():
 
             if link in range(0, 6):
                 self.link = link
-                print("  - Using RSSI link number                 : {}".format(self.link))
             else:
                 exit_message("  ERROR: Invalid RSSI link number. Must be between 0 and 5")
 
@@ -558,7 +551,6 @@ class PcieCard():
                 # The IP address was defined by the user.
                 # Note: when the PCIe card is not in used, the IP will be defined.
                 self.ip_addr = ip_addr
-                print("  - Using IP specified address             : {}".format(self.ip_addr))
             else:
                 # If not defined, read the one from the register.
                 # Note: this could be the case only the PCIe is in used.
@@ -571,7 +563,14 @@ class PcieCard():
                     exit_message("ERROR: IP Address read from the PCIe card: {} is invalid.".format(ip_addr))
 
                 self.ip_addr = ip_addr
-                print("  - Using IP address from PCIe card        : {}".format(self.ip_addr))
+
+            # Print system configuration and status
+            print("  - PCIe present in the system             : {}".format(
+                "Yes" if self.pcie_present else "No"))
+            print("  - PCIe based communicartion selected     : {}".format(
+                "Yes" if self.use_pcie else "No"))
+            print("  - Using RSSI link number                 : {}".format(self.link))
+            print("  - Using IP address                       : {}".format(self.ip_addr))
 
             # Print the FW version information
             self.print_version()
