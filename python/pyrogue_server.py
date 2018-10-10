@@ -500,20 +500,22 @@ class PcieCard():
         # Get system status:
 
         # Check if the PCIe card is present in the system
+        print("  - PCIe present in the system             : ", end='')
         if Path(dev).exists():
             self.pcie_present = True
-            print("  PCIe is present in the system")
+            print("Yes")
         else:
             self.pcie_present = False
-            print("  PCIe is not present in the system")
+            print("No")
 
         # Check if we use the PCIe for communication
+        print("  - PCIe based communicartion selected     : ", end='')
         if 'pcie-' in comm_type:
             self.use_pcie = True
-            print("  PCIe based communicartion selected")
+            print("Yes")
         else:
             self.use_pcie = False
-            print("  PCIe based communication not selected")
+            print("No")
 
         # Look for configuration errors:
 
@@ -529,7 +531,7 @@ class PcieCard():
 
             if link in range(0, 6):
                 self.link = link
-                print("  Using RSSI link number {}".format(self.link))
+                print("  - Using RSSI link number                 : {}".format(self.link))
             else:
                 exit_message("  ERROR: Invalid RSSI link number. Must be between 0 and 5")
 
@@ -559,7 +561,7 @@ class PcieCard():
                 # The IP address was defined by the user.
                 # Note: when the PCIe card is not in used, the IP will be defined.
                 self.ip_addr = ip_addr
-                print("  Using IP specified address: {}".format(self.ip_addr))
+                print("  - Using IP specified address             : {}".format(self.ip_addr))
             else:
                 # If not defined, read the one from the register.
                 # Note: this could be the case only the PCIe is in used.
@@ -572,7 +574,7 @@ class PcieCard():
                     exit_message("ERROR: IP Address read from the PCIe card: {} is invalid.".format(ip_addr))
 
                 self.ip_addr = ip_addr
-                print("  Using IP address loaded in the PCIe card: {}".format(self.ip_addr))
+                print("  - Using IP address from PCIe card        : {}".format(self.ip_addr))
 
         # When the PCIe card is not present we don't do anything
 
@@ -626,6 +628,7 @@ class PcieCard():
                 if self.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
                     print("    RSSI Link {} points to it. Disabling it...".format(i))
                     self.__configure(open=False, link=i)
+                    print("")
             print("  Done!")
             print("")
 
