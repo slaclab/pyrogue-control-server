@@ -636,6 +636,8 @@ class PcieCard():
 
         # Print inforamtion if the PCIe is present
         if self.pcie_present:
+            # Call readAll so that the LinkVariables get updated correctly.
+            self.pcie.ReadAll.call()
             print("  ==============================================================")
             print("                         PCIe information")
             print("  ==============================================================")
