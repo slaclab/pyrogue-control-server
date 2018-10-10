@@ -545,14 +545,9 @@ class PcieCard():
             self.pcie.add(fpga.Core(memBase=memMap))
             self.pcie.start(pollEn='False',initRead='True')
 
-            # Get the IP address
-            if ip_addr:
-                # The IP address was defined by the user.
-                # Note: when the PCIe card is not in used, the IP will be defined.
-                self.ip_addr = ip_addr
-            else:
-                # If not defined, read the one from the register.
-                # Note: this could be the case only the PCIe is in used.
+            # If the IP was not defined, read the one from the register space.
+            # Note: this could be the case only the PCIe is in used.
+            if not ip_addr:
                 ip_addr = self.pcie.Core.EthLane[0].UdpClient[self.link].ClientRemoteIp.get()
 
                 # Check if the IP address read from the PCIe card is valid
@@ -561,7 +556,10 @@ class PcieCard():
                 except socket.error:
                     exit_message("ERROR: IP Address read from the PCIe card: {} is invalid.".format(ip_addr))
 
-                self.ip_addr = ip_addr
+            # Update the IP address.
+            # Note: when the PCIe card is not in used, the IP will be defined
+            # by the user.
+            self.ip_addr = ip_addr
 
             # Print system configuration and status
             print("  - PCIe present in the system             : {}".format(
