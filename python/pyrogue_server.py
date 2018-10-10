@@ -569,8 +569,9 @@ class PcieCard():
                 "Yes" if self.pcie_present else "No"))
             print("  - PCIe based communicartion selected     : {}".format(
                 "Yes" if self.use_pcie else "No"))
-            print("  - Using RSSI link number                 : {}".format(self.link))
             print("  - Using IP address                       : {}".format(self.ip_addr))
+            if self.use_pcie:
+                print("  - Using RSSI link number                 : {}".format(self.link))
 
             # Print the FW version information
             self.print_version()
