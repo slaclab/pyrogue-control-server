@@ -553,9 +553,6 @@ class PcieCard():
             self.pcie.add(fpga.Core(memBase=memMap))
             self.pcie.start(pollEn='False',initRead='True')
 
-            # Print the FW version information
-            self.print_version()
-
             # Get the IP address
             if ip_addr:
                 # The IP address was defined by the user.
@@ -575,6 +572,9 @@ class PcieCard():
 
                 self.ip_addr = ip_addr
                 print("  - Using IP address from PCIe card        : {}".format(self.ip_addr))
+
+            # Print the FW version information
+            self.print_version()
 
         # When the PCIe card is not present we don't do anything
 
@@ -598,7 +598,7 @@ class PcieCard():
 
         # Check if the PCIe is present and in used
         if self.pcie_present and self.use_pcie:
-            print("  Opening RSSI link...")
+            print("  * Opening RSSI link...")
             self.__configure(open=True, link=self.link)
             print("  Done!")
             print("")
@@ -610,7 +610,7 @@ class PcieCard():
 
         # Check if the PCIe is present and in used
         if self.pcie_present and self.use_pcie:
-            print("  Closing RSSI link...")
+            print("  * Closing RSSI link...")
             self.__configure(open=False, link=self.link)
             print("  Done!")
             print("")
@@ -622,7 +622,7 @@ class PcieCard():
 
         # Check if the PCIe is present
         if self.pcie_present:
-            print("  Looking for RSSI links pointing to {}...".format(self.ip_addr))
+            print("  * Looking for RSSI links pointing to {}...".format(self.ip_addr))
             # Look for links with the target IP address, and close their RSSI connection
             for i in range(6):
                 if self.ip_addr == self.pcie.Core.EthLane[0].UdpClient[i].ClientRemoteIp.get():
