@@ -234,7 +234,6 @@ class LocalServer(pyrogue.Root):
                 pcie_rssi_link = 0
 
             # Instantiate Fpga top level
-            # fpga = FpgaTopLevel(ipAddr=ip_addr)
             fpga = FpgaTopLevel(ipAddr=ip_addr,
                 commType=comm_type,
                 pcieRssiLink=pcie_rssi_link)
