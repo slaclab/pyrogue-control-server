@@ -229,6 +229,10 @@ class LocalServer(pyrogue.Root):
             stm_interface_writer = pyrogue.utilities.fileio.StreamWriter(name='streamingInterface')
             self.add(stm_interface_writer)
 
+            # Workaround to FpgaTopLelevel not supporting rssi = None
+            if pcie_rssi_link == None:
+                pcie_rssi_link = 0
+
             # Instantiate Fpga top level
             # fpga = FpgaTopLevel(ipAddr=ip_addr)
             fpga = FpgaTopLevel(ipAddr=ip_addr,
