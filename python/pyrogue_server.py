@@ -593,6 +593,10 @@ class PcieCard():
         # Close the RSSI link before exit
         self.close_rssi()
 
+        # Stop the device
+        if self.pcie_present:
+            self.pcie.stop()
+
     def open_rssi(self):
         """
         Open the RSSI connection in the specified link
