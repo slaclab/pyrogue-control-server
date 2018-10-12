@@ -563,16 +563,19 @@ class PcieCard():
             # by the user.
             self.ip_addr = ip_addr
 
-            # Print system configuration and status
-            print("  - PCIe present in the system             : {}".format(
-                "Yes" if self.pcie_present else "No"))
-            print("  - PCIe based communicartion selected     : {}".format(
-                "Yes" if self.use_pcie else "No"))
-            print("  - Using IP address                       : {}".format(self.ip_addr))
-            if self.use_pcie:
-                print("  - Using RSSI link number                 : {}".format(self.link))
+        # Print system configuration and status
+        print("  - PCIe present in the system             : {}".format(
+            "Yes" if self.pcie_present else "No"))
+        print("  - PCIe based communicartion selected     : {}".format(
+            "Yes" if self.use_pcie else "No"))
 
-            # Print the FW version information
+        # Show IP address and link when the PCIe is in use
+        if self.use_pcie:
+            print("  - Using IP address                       : {}".format(self.ip_addr))
+            print("  - Using RSSI link number                 : {}".format(self.link))
+
+        # Print the FW version information when the PCIe is present
+        if self.pcie_present:
             self.print_version()
 
         # When the PCIe card is not present we don't do anything
