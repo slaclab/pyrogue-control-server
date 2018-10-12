@@ -445,6 +445,7 @@ class LocalServer(pyrogue.Root):
             create_gui(self)
         else:
             # Stop the server when Crtl+C is pressed
+            print("Running in server mode now. Press Ctrl+C to stop...")
             try:
                 # Wait for Ctrl+C
                 while True:
