@@ -23,6 +23,13 @@ TOP=$(dirname -- "$(readlink -f $0)")
 PYTHON_SCRIPT_NAME=$TOP/python/pyrogue_server.py
 SETUP_SCRIPTS=$TOP/setup*.sh
 
+# Setup the environment
+echo ""
+echo "Setting the enviroment..."
+for f in $SETUP_SCRIPTS; do
+    [ -e "$f" ] && echo "Sourcing $f..." && source $f
+done
+
 # Usage message
 usage() {
     echo ""
@@ -85,12 +92,7 @@ DIR=$TEMP_DIR/$PROJ
 echo "Project name = $PROJ"
 echo "PyRogue directory = $DIR"
 
-# Setup the environment
-echo ""
-echo "Setting the enviroment..."
-for f in $SETUP_SCRIPTS; do
-	[ -e "$f" ] && echo "Sourcing $f..." && source $f
-done
+# Update PYTHONPATH
 export PYTHONPATH=$PYTHONPATH:$DIR/python
 
 # Start the server
