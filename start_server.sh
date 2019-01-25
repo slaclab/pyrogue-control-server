@@ -25,7 +25,7 @@ SETUP_SCRIPTS=$TOP/setup*.sh
 
 # Setup the environment
 echo ""
-echo "Setting the enviroment..."
+echo "Setting the environment..."
 for f in $SETUP_SCRIPTS; do
     [ -e "$f" ] && echo "Sourcing $f..." && source $f
 done
@@ -34,7 +34,7 @@ done
 usage() {
     echo ""
     echo "Start a PyRogue server to communicate with an FPGA."
-    echo "This startup bash script set the enviroinment and calls the python script $PYTHON_SCRIPT_NAME"
+    echo "This startup bash script set the environment and calls the python script $PYTHON_SCRIPT_NAME"
     echo ""
     echo "Usage: $SCRIPT_NAME -t|--tar <pyrogue.tar.gz> [-h|--help] {extra arguments for $PYTHON_SCRIPT_NAME}"
     echo "    -t|--tar <pyrogue.tar.gz> : tarball file with pyrogue definitions."
