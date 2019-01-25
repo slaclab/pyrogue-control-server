@@ -47,7 +47,7 @@ def usage(name):
         "a GUI (Must be used with -p and/or -e)")
     print("    -n|--nopoll                : Disable all polling")
     print("    -c|--commType comm_type    : Communication type with the FPGA",\
-        "(default to \"eth-rssi-non-interleaved\"")
+        "(default to \"eth-rssi-non-interleaved)\"")
     print("    -l|--pcie-rssi-link index  : PCIe RSSI link (only needed with"\
         "PCIe). Supported values are 0 to 5")
     print("    -b|--stream-size data_size : Expose the stream data as EPICS",\
