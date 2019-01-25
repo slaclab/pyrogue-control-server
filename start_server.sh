@@ -35,7 +35,6 @@ usage() {
     echo ""
     echo "All other arguments are passed directly to $PYTHON_SCRIPT_NAME which usage is:"
     echo ""
-    source $ROGUE_SETUP_SCRIPT
     $PYTHON_SCRIPT_NAME -h
     exit
 }
