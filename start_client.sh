@@ -20,7 +20,14 @@
 SCRIPT_NAME=$0
 TOP=$(dirname -- "$(readlink -f $0)")
 PYTHON_SCRIPT_NAME=$TOP/python/pyrogue_client.py
-ROGUE_SETUP_SCRIPT=$TOP/setup_rogue.sh
+SETUP_SCRIPTS=$TOP/setup*.sh
+
+# Setup the environment
+echo ""
+echo "Setting the environment..."
+for f in $SETUP_SCRIPTS; do
+    [ -e "$f" ] && echo "Sourcing $f..." && source $f
+done
 
 # Usage message
 usage() {
@@ -33,17 +40,9 @@ usage() {
     echo ""
     echo "All other arguments are passed directly to $PYTHON_SCRIPT_NAME which usage is:"
     echo ""
-    source $ROGUE_SETUP_SCRIPT
     $PYTHON_SCRIPT_NAME -h
     exit
 }
-
-# Check if the required rogue setup script exists
-if [ ! -f "$ROGUE_SETUP_SCRIPT" ]
-then
-    echo "$ROGUE_SETUP_SCRIPT not found!"
-    exit
-fi
 
 # Check for arguments
 ARGS=""
@@ -62,11 +61,6 @@ do
     esac
     shift
 done
-
-echo ""
-
-echo "Setting the enviroment..."
-source $ROGUE_SETUP_SCRIPT
 
 # Start the client
 echo "Starting the client..."
