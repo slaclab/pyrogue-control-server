@@ -56,7 +56,7 @@ do
             usage
             ;;
         *)
-            # All other arguemnts are passed to the pyton script
+            # All other arguments are passed to the python script
             ARGS="$ARGS $1"
             #shift
             ;;
@@ -86,7 +86,7 @@ DIR=$TEMP_DIR/$PROJ
 echo "Project name = $PROJ"
 echo "PyRogue directory = $DIR"
 
-# Setup the enviroment
+# Setup the environment
 echo ""
 echo "Setting the enviroment..."
 for f in $SETUP_SCRIPTS; do
