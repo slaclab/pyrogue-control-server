@@ -32,12 +32,13 @@ import rogue.interfaces.stream
 
 # Print the usage message
 def usage(name):
-    print("Usage: {} -a|--addr IP_address [-d|--defaults config_file]".format(name),\
+    print("Usage: {} [-a|--addr IP_address] [-d|--defaults config_file]".format(name),\
         " [-s|--server] [-p|--pyro group_name] [-e|--epics prefix]",\
         " [-n|--nopoll] [-b|--stream-size byte_size] [-f|--stream-type data_type]",\
         " [-c|--commType comm_type] [-l|--slot slot_number] [-h|--help]")
     print("    -h|--help                  : Show this message")
-    print("    -a|--addr IP_address       : FPGA IP address")
+    print("    -a|--addr IP_address       : FPGA IP address. Mandatory",\
+        "if Ethernet communication is used")
     print("    -d|--defaults config_file  : Default configuration file")
     print("    -p|--pyro group_name       : Start a Pyro4 server with",\
         "group name \"group_name\"")
@@ -48,7 +49,7 @@ def usage(name):
     print("    -n|--nopoll                : Disable all polling")
     print("    -c|--commType comm_type    : Communication type with the FPGA",\
         "(default to \"eth-rssi-non-interleaved)\"")
-    print("    -l|--pcie-rssi-link index  : PCIe RSSI link (only needed with"\
+    print("    -l|--pcie-rssi-link index  : PCIe RSSI link (only needed with",\
         "PCIe). Supported values are 0 to 5")
     print("    -b|--stream-size data_size : Expose the stream data as EPICS",\
         "PVs. Only the first \"data_size\" points will be exposed.",\
@@ -67,7 +68,7 @@ def usage(name):
         " Start a local rogure server, without GUI, with Pyro and EPICS servers")
     print("")
 
-# Cretae gui interface
+# Create gui interface
 def create_gui(root):
     app_top = pyrogue.gui.application(sys.argv)
     gui_top = pyrogue.gui.GuiTop(group='GuiTop')
@@ -95,8 +96,8 @@ def get_host_name():
 
 class DataBuffer(rogue.interfaces.stream.Slave):
     """
-    Data buffer class use to capture data comming from the stream FIFO \
-    and copy it into a local buffer using a especific data format.
+    Data buffer class use to capture data coming from the stream FIFO \
+    and copy it into a local buffer using a specific data format.
     """
     def __init__(self, size, data_type):
         rogue.interfaces.stream.Slave.__init__(self)
@@ -184,7 +185,7 @@ class DataBuffer(rogue.interfaces.stream.Slave):
             if data_format == 'B' or data_format == 'b':      # uint8, int8
                 self._data_format = data_format
                 self._data_size = 1
-            elif data_format == 'H' or  data_format == 'h':     # uint16, int16
+            elif data_format == 'H' or  data_format == 'h':   # uint16, int16
                 self._data_format = data_format
                 self._data_size = 2
             elif data_format == 'I' or data_format == 'i':    # uint32, int32
@@ -277,7 +278,7 @@ class LocalServer(pyrogue.Root):
                         else:
                             fifo_size = stream_pv_size * 4
 
-                        # Setup a FIFO tapped to the steram data and a Slave data buffer
+                        # Setup a FIFO tapped to the stream data and a Slave data buffer
                         # Local variables will talk to the data buffer directly.
                         stream_fifo = rogue.interfaces.stream.Fifo(0, fifo_size)
                         data_buffer = DataBuffer(size=stream_pv_size, data_type=stream_pv_type)
@@ -340,10 +341,10 @@ class LocalServer(pyrogue.Root):
                         self.add(byte_order_var)
                         self.add(format_string_var)
 
-            # lcaPut limits the maximun lenght of a string to 40 chars, as defined
+            # lcaPut limits the maximum length of a string to 40 chars, as defined
             # in the EPICS R3.14 CA reference manual. This won't allowed to use the
             # command 'ReadConfig' with a long file path, which is usually the case.
-            # This function is a workaround to that problem. Fomr matlab one can
+            # This function is a workaround to that problem. Form matlab one can
             # just call this function without arguments an the function ReadConfig
             # will be called with a predefined file passed during startup
             # However, it can be usefull also win the GUI, so it is always added.
@@ -390,7 +391,7 @@ class LocalServer(pyrogue.Root):
         if epics_prefix:
             print("Starting EPICS server using prefix \"{}\"".format(epics_prefix))
 
-            # Choose the appropiate epics module:
+            # Choose the appropriate epics module:
             if use_pcas:
                 self.epics = pyrogue.epics.EpicsCaServer(base=epics_prefix, root=self)
             else:
@@ -417,7 +418,7 @@ class LocalServer(pyrogue.Root):
 
             self.epics.start()
 
-            # Dump the PV list to the especified file
+            # Dump the PV list to the specified file
             if pv_dump_file:
                 try:
                     # Try to open the output file
@@ -481,17 +482,17 @@ class PcieCard():
     If the PCIe card is present in the system:
     - All the RSSI connection links which point to the target IP address will
       be closed.
-    - If PCIe comunication type is used, the RSSI connection is open in the
+    - If PCIe communication type is used, the RSSI connection is open in the
       specific link. Also, when the the server is closed, the RSSI connection
       is closed.
 
     If the PCIe card is not present:
-    - If PCIe comunication type is used, the program is terminated.
+    - If PCIe communication type is used, the program is terminated.
     - If ETH communication type is used, then this class does not do anything.
 
     This class must be used in a 'with' block in order to ensure that the
     RSSI connection is close correctly during exit even in the case of an
-    exepction condition.
+    exception condition.
     """
 
     def __init__(self, comm_type, link, ip_addr='', dev='/dev/datadev_0'):
@@ -566,7 +567,7 @@ class PcieCard():
         # Print system configuration and status
         print("  - PCIe present in the system             : {}".format(
             "Yes" if self.pcie_present else "No"))
-        print("  - PCIe based communicartion selected     : {}".format(
+        print("  - PCIe based communication selected     : {}".format(
             "Yes" if self.use_pcie else "No"))
 
         # Show IP address and link when the PCIe is in use
@@ -643,7 +644,7 @@ class PcieCard():
         Print the FW version information
         """
 
-        # Print inforamtion if the PCIe is present
+        # Print information if the PCIe is present
         if self.pcie_present:
             # Call readAll so that the LinkVariables get updated correctly.
             self.pcie.ReadAll.call()
@@ -772,7 +773,7 @@ if __name__ == "__main__":
             if arg in comm_type_valid_types:
                 comm_type = arg
             else:
-                print("Invalid communication type. Valid choises are:")
+                print("Invalid communication type. Valid choices are:")
                 for c in comm_type_valid_types:
                     print("  - \"{}\"".format(c))
                 exit_message("ERROR: Invalid communication type")
@@ -791,7 +792,7 @@ if __name__ == "__main__":
     # Check connection with the board if using eth communication
     if "eth-" in comm_type:
         if not ip_addr:
-            exit_message("ERROR: Must specify an IP address for ethernet base communication devices.")
+            exit_message("ERROR: Must specify an IP address for Ethernet base communication devices.")
 
         print("")
         print("Trying to ping the FPGA...")
@@ -806,7 +807,7 @@ if __name__ == "__main__":
     if server_mode and not (group_name or epics_prefix):
         exit_message("    ERROR: Can not start in server mode without Pyro or EPICS server")
 
-    # Try to import the FpgaTopLevel defintion
+    # Try to import the FpgaTopLevel definition
     try:
         from FpgaTopLevel import FpgaTopLevel
     except ImportError as ie:
@@ -815,7 +816,7 @@ if __name__ == "__main__":
 
     # If EPICS server is enable, import the epics module
     if epics_prefix:
-        # Choose the appropiate epics module:
+        # Choose the appropriate epics module:
         #  - until version 2.6.0 rogue uses PCASpy
         #  - later versions use GDD
         use_pcas = True
@@ -833,7 +834,7 @@ if __name__ == "__main__":
             print("Using GDD-based EPICS server")
             import pyrogue.protocols.epics
 
-    # Import the QT and gui modules if not in server mode
+    # Import the QT and GUI modules if not in server mode
     if not server_mode:
         import pyrogue.gui
 
