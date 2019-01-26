@@ -1,7 +1,7 @@
 FROM tidair/rogue:v3.1.1
 
 # We need the "ping" command
-RUN apt-get update && apt-get -y \
+RUN apt-get update && apt-get install -y \
     iputils-ping \
  && rm -rf /var/lib/apt/lists/*
 
