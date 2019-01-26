@@ -10,7 +10,7 @@ env:
 
 stages:
   - name: deploy_docker
-    #if: tag IS present
+    if: tag IS present
 
 jobs:
   include:
