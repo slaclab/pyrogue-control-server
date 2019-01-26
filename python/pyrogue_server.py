@@ -347,7 +347,7 @@ class LocalServer(pyrogue.Root):
             # This function is a workaround to that problem. Form matlab one can
             # just call this function without arguments an the function ReadConfig
             # will be called with a predefined file passed during startup
-            # However, it can be usefull also win the GUI, so it is always added.
+            # However, it can be useful also win the GUI, so it is always added.
             self.config_file = config_file
             self.add(pyrogue.LocalCommand(
                 name='setDefaults',
