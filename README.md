@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/slaclab/pyrogue-control-server.svg?branch=master)](https://travis-ci.org/slaclab/pyrogue-control-server)
+
 # PyRogue General Purpose Control Server
 
 ## Overview
@@ -131,3 +133,6 @@ For example:
 ./start_client.sh [-g pyro4_group]
 ```
 
+## Dockers
+
+A Docker image containing Rogue and this control server is provided with each tagged released of this repository. You can find more information in [here](README.docker.md)

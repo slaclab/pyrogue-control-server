@@ -1,0 +1,36 @@
+language: minimal
+
+services:
+  - docker
+
+env:
+  global:
+    - DOCKER_ORG_NAME=tidair
+    - DOCKER_REPO=pyrogue-control-server
+
+stages:
+  - name: deploy_docker
+    #if: tag IS present
+
+jobs:
+  include:
+    - stage: deploy_docker
+      name: "Deploy Docker Image"
+      before_script:
+        # Git tag
+        - export GIT_TAG=`git describe --tags --always`
+        # Use the git tag to tag tag docker image
+        - export DOCKER_TAG=${GIT_TAG}
+        # Login to docker
+        - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_ORG_NAME}" --password-stdin;
+
+      script:
+        # Build the docker image
+        - docker build --build-arg TAG={GIT_TAG} -t ${DOCKER_ORG_NAME}/${DOCKER_REPO} .
+
+      after_success:
+        # Upload docker image (as tagged and latest version)
+        - docker push ${DOCKER_ORG_NAME}/${DOCKER_REPO};
+        - docker tag ${DOCKER_ORG_NAME}/${DOCKER_REPO} ${DOCKER_ORG_NAME}/${DOCKER_REPO}:${DOCKER_TAG};
+        - docker push ${DOCKER_ORG_NAME}/${DOCKER_REPO}:${DOCKER_TAG};
+        - echo "Docker image '${DOCKER_ORG_NAME}/${DOCKER_REPO}:${DOCKER_TAG}' pushed"
