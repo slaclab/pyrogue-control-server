@@ -1,5 +1,10 @@
 FROM tidair/rogue:v3.1.1
 
+# We need the "ping" command
+RUN apt-get update && apt-get -y \
+    iputils-ping \
+ && rm -rf /var/lib/apt/lists/*
+
 # Install the SMURF PCIe card repository
 WORKDIR /usr/local/src
 RUN git clone https://github.com/slaclab/smurf-pcie.git
