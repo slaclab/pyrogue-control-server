@@ -4,8 +4,9 @@ FROM tidair/rogue:v3.1.1
 # Defaults to master is the tag version is not specified
 ARG TAG=master
 WORKDIR /usr/local/src
-RUN git clone https://github.com/slaclab/pyrogue-control-server.git -b ${TAG}
+RUN git clone https://github.com/slaclab/pyrogue-control-server.git
 WORKDIR pyrogue-control-server
+RUN git checkout ${TAG}
 
 # Run the control server using the user arguments
 CMD ./start_server.sh ${SERVER_ARGS}
