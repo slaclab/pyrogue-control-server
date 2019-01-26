@@ -26,7 +26,7 @@ jobs:
 
       script:
         # Build the docker image
-        - docker build --build-arg TAG={GIT_TAG} -t ${DOCKER_ORG_NAME}/${DOCKER_REPO} .
+        - docker build --build-arg TAG=${GIT_TAG} -t ${DOCKER_ORG_NAME}/${DOCKER_REPO} .
 
       after_success:
         # Upload docker image (as tagged and latest version)
